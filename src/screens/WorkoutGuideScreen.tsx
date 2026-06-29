@@ -1,13 +1,20 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { AppButton, ScreenContainer } from '../components';
+import CardioLogger from '../components/CardioLogger';
+import ExerciseStepCard from '../components/ExerciseStepCard';
+import RestTimer from '../components/RestTimer';
+import SetLogger from '../components/SetLogger';
 import { colors, radius, spacing, typography } from '../theme';
 import { RootStackParamList } from '../navigation/types';
 import { getPlanDay, usePlanStore } from '../state/planStore';
+import { useWorkoutSessionStore } from '../state/workoutSessionStore';
 
 type GuideRoute = RouteProp<RootStackParamList, 'WorkoutGuide'>;
+type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 function cardioName(machine: string): string {
   switch (machine) {
@@ -25,132 +32,177 @@ function cardioName(machine: string): string {
 }
 
 export default function WorkoutGuideScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<Nav>();
   const route = useRoute<GuideRoute>();
   const week = route.params?.week ?? 1;
   const dayNumber = route.params?.dayNumber ?? 1;
 
   const plan = usePlanStore((s) => s.plan);
-  const day = getPlanDay(plan, week, dayNumber);
+  const planDay = getPlanDay(plan, week, dayNumber);
+  const session = useWorkoutSessionStore((s) => s.session);
+  const { logSet, skipExercise, logCardio, skipCardio, finish } = useWorkoutSessionStore();
 
-  if (!day) {
+  // step 0..strength.length-1 = exercises; strength.length = cardio (if any)
+  const [step, setStep] = useState(0);
+  const [resting, setResting] = useState(false);
+
+  // Guard: no session/plan → don't crash, send the user back to Today.
+  if (!session || !planDay) {
     return (
       <ScreenContainer scroll>
         <Text style={typography.h1}>Workout</Text>
         <Text style={[typography.body, styles.muted]}>
-          No workout to show yet. Finish onboarding to generate your plan.
+          No active workout. Head back to Today and tap Start Workout.
         </Text>
-        <AppButton label="Back" variant="ghost" onPress={() => navigation.goBack()} />
+        <AppButton label="Back to Today" variant="ghost" onPress={() => navigation.navigate('Main')} />
       </ScreenContainer>
     );
   }
 
+  const strengthCount = planDay.strength.length;
+  const hasCardio = !!planDay.cardio;
+  const totalSteps = strengthCount + (hasCardio ? 1 : 0);
+  const onCardioStep = hasCardio && step === strengthCount;
+
+  const endEarly = () => {
+    Alert.alert('End workout?', 'Your logged sets will be saved.', [
+      { text: 'Keep going', style: 'cancel' },
+      {
+        text: 'End workout',
+        style: 'destructive',
+        onPress: () => {
+          finish('abandoned', new Date().toISOString());
+          navigation.replace('SessionSummary');
+        },
+      },
+    ]);
+  };
+
+  const goToSummary = () => {
+    finish('completed', new Date().toISOString());
+    navigation.replace('SessionSummary');
+  };
+
+  // ---- Cardio step ----
+  if (onCardioStep && session.cardio && planDay.cardio) {
+    return (
+      <ScreenContainer scroll>
+        <Text style={styles.stepCount}>Last step · Cardio</Text>
+        <CardioLogger
+          machineName={cardioName(planDay.cardio.machine)}
+          plannedMinutes={planDay.cardio.minutes}
+          onSave={(data) => {
+            logCardio(data);
+            goToSummary();
+          }}
+          onSkip={() => {
+            skipCardio();
+            goToSummary();
+          }}
+        />
+        {step > 0 ? (
+          <AppButton label="Back" variant="ghost" onPress={() => setStep((s) => s - 1)} />
+        ) : null}
+        <AppButton label="End workout" variant="ghost" onPress={endEarly} />
+      </ScreenContainer>
+    );
+  }
+
+  // ---- Strength step ----
+  const planEx = planDay.strength[step];
+  const exLog = session.exercises[step];
+  if (!planEx || !exLog) {
+    // Out of range safety — jump to finishing.
+    return (
+      <ScreenContainer scroll>
+        <Text style={typography.h1}>Nice work!</Text>
+        <AppButton label="Finish" onPress={goToSummary} />
+      </ScreenContainer>
+    );
+  }
+
+  const setsDone = exLog.sets.length;
+  const exerciseResolved = exLog.painReported || exLog.skipped || setsDone >= exLog.targetSets;
+  const isLastStep = step === totalSteps - 1;
+
+  const advance = () => {
+    setResting(false);
+    if (isLastStep) {
+      goToSummary();
+    } else {
+      setStep((s) => s + 1);
+    }
+  };
+
+  const lastWeight =
+    setsDone > 0 && exLog.sets[setsDone - 1].weightLb != null
+      ? String(exLog.sets[setsDone - 1].weightLb)
+      : undefined;
+
   return (
     <ScreenContainer scroll>
-      <Text style={styles.weekLabel}>
-        Week {day.weekNumber} · Day {day.dayNumber}
-      </Text>
-      <Text style={typography.h1}>{day.name}</Text>
-      <Text style={[typography.body, styles.muted]}>
-        ~{day.estimatedMinutes} min · You&apos;ll need: water, a towel, comfy shoes.
-      </Text>
+      <ExerciseStepCard exercise={planEx} exerciseIndex={step} totalExercises={strengthCount} />
 
-      {/* Strength list */}
-      {day.strength.map((ex, i) => (
-        <View key={ex.exerciseId} style={styles.exCard}>
-          <View style={styles.exHeader}>
-            <Text style={styles.exIndex}>{i + 1}</Text>
-            <View style={styles.exHeaderText}>
-              <Text style={styles.exName}>{ex.name}</Text>
-              <Text style={styles.exSets}>
-                {ex.sets} sets × {ex.repMin}–{ex.repMax} reps · rest {ex.restSeconds}s
-              </Text>
-            </View>
-          </View>
-          <View style={styles.imageBox}>
-            <Text style={styles.imageEmoji}>🏋️</Text>
-            <Text style={styles.imageHint}>Image coming soon</Text>
-          </View>
-          <Text style={styles.lineLabel}>Weight</Text>
-          <Text style={styles.lineText}>{ex.startingWeightGuidance}</Text>
-          <Text style={styles.lineLabel}>Setup</Text>
-          <Text style={styles.lineText}>{ex.setupNote}</Text>
-          <Text style={styles.lineLabel}>Form tip</Text>
-          <Text style={styles.lineText}>{ex.formTip}</Text>
-        </View>
-      ))}
-
-      {/* Cardio block */}
-      {day.cardio ? (
-        <View style={styles.cardioCard}>
-          <Text style={styles.cardioTitle}>🏃 Cardio — {cardioName(day.cardio.machine)}</Text>
-          <Text style={styles.lineText}>{day.cardio.minutes} minutes</Text>
-          <Text style={styles.lineLabel}>Intensity</Text>
-          <Text style={styles.lineText}>{day.cardio.intensityGuidance}</Text>
-          <Text style={styles.lineText}>{day.cardio.beginnerNote}</Text>
+      {/* Pain warning takes priority */}
+      {exLog.painReported ? (
+        <View style={styles.painCard}>
+          <Text style={styles.painTitle}>Let&apos;s pause this one</Text>
+          <Text style={styles.painBody}>
+            Stop this exercise for today. Your next plan can use a safer option.
+          </Text>
         </View>
       ) : null}
 
-      {/* Beginner safety note */}
-      <View style={styles.noteCard}>
-        <Text style={styles.noteText}>{day.beginnerNote}</Text>
-      </View>
+      {/* Logging / resting / resolved */}
+      {!exerciseResolved && !resting ? (
+        <SetLogger
+          setNumber={setsDone + 1}
+          totalSets={exLog.targetSets}
+          initialWeight={lastWeight}
+          onSave={(set) => {
+            logSet(step, set);
+            const willBeDone = setsDone + 1 >= exLog.targetSets;
+            if (!set.pain && !willBeDone) setResting(true);
+          }}
+        />
+      ) : null}
 
-      <AppButton label="Start workout (logging coming soon)" disabled onPress={() => {}} />
-      <AppButton label="Back to Today" variant="ghost" onPress={() => navigation.goBack()} />
+      {!exerciseResolved && resting ? (
+        <RestTimer
+          seconds={exLog.restSeconds}
+          nextLabel={`Set ${setsDone + 1} of ${exLog.targetSets}`}
+          onDone={() => setResting(false)}
+          onSkip={() => setResting(false)}
+        />
+      ) : null}
+
+      {exerciseResolved ? (
+        <AppButton label={isLastStep ? 'Finish workout' : 'Next exercise'} onPress={advance} />
+      ) : (
+        <AppButton
+          label="Skip this exercise"
+          variant="ghost"
+          onPress={() => skipExercise(step)}
+        />
+      )}
+
+      {step > 0 ? (
+        <AppButton label="Back" variant="ghost" onPress={() => setStep((s) => s - 1)} />
+      ) : null}
+      <AppButton label="End workout" variant="ghost" onPress={endEarly} />
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
   muted: { color: colors.textMuted },
-  weekLabel: { ...typography.caption, color: colors.primary, fontWeight: '700' },
-  exCard: {
-    backgroundColor: colors.surface,
+  stepCount: { ...typography.caption, color: colors.primary, fontWeight: '700' },
+  painCard: {
+    backgroundColor: '#FCECE3',
     borderRadius: radius.lg,
     padding: spacing.lg,
     gap: spacing.xs,
   },
-  exHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  exIndex: {
-    ...typography.h3,
-    color: colors.onPrimary,
-    backgroundColor: colors.primary,
-    width: 32,
-    height: 32,
-    borderRadius: radius.pill,
-    textAlign: 'center',
-    lineHeight: 32,
-    overflow: 'hidden',
-  },
-  exHeaderText: { flex: 1 },
-  exName: { ...typography.h3, color: colors.text },
-  exSets: { ...typography.caption, color: colors.textMuted },
-  imageBox: {
-    height: 120,
-    borderRadius: radius.md,
-    backgroundColor: colors.bgAlt,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: spacing.xs,
-  },
-  imageEmoji: { fontSize: 36 },
-  imageHint: { ...typography.caption, color: colors.textMuted },
-  lineLabel: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs },
-  lineText: { ...typography.body, color: colors.text },
-  cardioCard: {
-    backgroundColor: '#E8F3F0',
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    gap: spacing.xs,
-  },
-  cardioTitle: { ...typography.h3, color: colors.primary },
-  noteCard: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-  },
-  noteText: { ...typography.body, color: colors.text },
+  painTitle: { ...typography.h3, color: colors.danger },
+  painBody: { ...typography.body, color: colors.text },
 });

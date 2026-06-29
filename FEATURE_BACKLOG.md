@@ -25,11 +25,11 @@
 ## Epic C — Today & Workout session (P0)
 - [ ] **B-07** Today screen (M) — today's workout card, cardio chip, habit goal, streak, Start button; rest-day + no-plan empty states. *Success: shows correct day from plan.*
 - [ ] **B-08** Workout overview screen (S) — ordered exercise list + Start. *Success: lists day's exercises, Start enters guide.*
-- [ ] **B-09** Machine guide screen (M) — image, plain description, setup steps, sets/reps, suggested weight, form tips, swap/skip. *Success: renders exercise 1..n with progress indicator.*
-- [ ] **B-10** Session state store (Zustand) (M) — track current exercise/set, resumable session, in_progress `workout_sessions` row. *Success: close & reopen app mid-workout → resume prompt works.*
-- [ ] **B-11** Set logging screen (S) — weight/reps steppers, effort, pain toggle; writes `exercise_sets`. *Success: set persists, returns to flow.*
-- [ ] **B-12** Rest timer (S) — countdown ring, ±15s, skip, haptic, next-set preview. *Success: counts down, auto-advances.*
-- [ ] **B-13** Session summary + complete (S) — mark `workout_sessions.completed`, 1-tap overall feel, update streak. *Success: completed session counts toward streak/unlock.*
+- [x] **B-09** Machine guide screen (M) — ✅ Loop 5. ExerciseStepCard: image placeholder, plain description, setup, sets/reps, weight guidance, form tip, safety note; progress indicator.
+- [x] **B-10** Session state store (Zustand) (M) — ✅ Loop 5 `workoutSessionStore`. Tracks exercises/sets/cardio/pain/skipped. (Persistence/resume + `workout_sessions` row deferred to auth loop.)
+- [x] **B-11** Set logging (S) — ✅ Loop 5 `SetLogger`: weight/reps/effort/pain → local store (maps to `exercise_sets`).
+- [x] **B-12** Rest timer (S) — ✅ Loop 5 `RestTimer`: countdown, ±15s, skip, auto-advance, next-set preview.
+- [x] **B-13** Session summary (S) — ✅ Loop 5 `SessionSummaryScreen`: sets/cardio/skipped recap + complete. (Streak/unlock = later analytics loop.)
 
 ## Epic D — Trainer logic (P0)
 - [ ] **B-14** Rule engine R1–R4 (M) — per-exercise recommendations + tests; writes `trainer_recommendations`; updates `suggested_weight_lb`. *Success: table-driven tests pass; pain overrides.*

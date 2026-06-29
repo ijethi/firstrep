@@ -7,11 +7,28 @@
 ---
 
 ## Current loop
-- **Loop #:** 4 — **B-04 Local rule-based plan generation**
-- **Goal of this loop:** Pure `generatePlan(answers)` → 4-week beginner weight-loss plan in local Zustand store; Today shows W1D1; overview screen. No backend/Supabase/auth/AI/nutrition.
-- **Success condition:** Onboarding completion generates a local 4-week plan; Today shows W1D1; respects days/week + injury safety; typecheck clean.
+- **Loop #:** 5 — **B-05 Guided machine-by-machine session + set logging + rest timer**
+- **Goal of this loop:** Live workout session for W1D1: step through exercises, log sets (weight/reps/effort/pain), rest timer, cardio logging, pain-safe continue, session summary. Local-only.
+- **Success condition:** Start from Today; one exercise at a time; log sets; rest timer; cardio log; pain stops exercise (not workout); complete → summary; typecheck clean.
 - **Ceiling:** Max 3 fix attempts. (Used: 0 — passed on first checker pass.)
-- **Status:** ✅ Complete — awaiting approval for B-05 (set logging).
+- **Status:** ✅ Complete — awaiting approval for B-06 (trainer progression).
+
+### Loop 5 verification (maker-checker — typecheck + executed assertions)
+| Gate | Result |
+|------|--------|
+| `npx tsc --noEmit` | ✅ PASSED |
+| Start W1D1 from Today | ✅ `startSession(day)` → WorkoutGuide live mode |
+| One exercise at a time | ✅ step index; "Exercise N of M" + "Set Y of Z" |
+| Log sets locally | ✅ weight(lb)/reps/effort(easy·good·hard)/pain → Zustand (asserted) |
+| Rest timer | ✅ countdown, ±15s, skip, auto-advance |
+| Cardio logging | ✅ planned + completed minutes + intensity (asserted) |
+| **Pain stops exercise, not workout** | ✅ painReported set; session stays in_progress; warning shown; Next continues (asserted) |
+| Back / End early w/ confirm | ✅ Back to previous exercise; End workout → Alert confirm |
+| Session summary | ✅ sets logged / cardio min / skipped / per-exercise recap |
+| Captures B-06 data | ✅ reps, weight, effort, pain, skipped, cardio minutes (asserted) |
+| Maps to DB tables | ✅ WorkoutSessionLocal→workout_sessions, sets→exercise_sets (`setEffortToDbEffort`→Effort enum), cardio→cardio_logs, pain→feeds trainer_recommendations |
+| Incomplete plan/session | ✅ guards in WorkoutGuide + SessionSummary (no crash) |
+| No backend/Supabase/auth/AI/nutrition/analytics | ✅ |
 
 ### Loop 4 verification (maker-checker — typecheck + executed assertions)
 | Gate | Result |
@@ -105,6 +122,15 @@
 - CHANGED `src/screens/WorkoutGuideScreen.tsx` — read-only workout overview from plan (logging deferred to B-05)
 - CHANGED `src/navigation/types.ts` — WorkoutGuide route params `{ week?, dayNumber? }`
 
+### B-05 files created / changed
+- NEW `src/state/workoutSessionStore.ts` — live session Zustand store + `setEffortToDbEffort()` mapper
+- NEW `src/components/{ExerciseStepCard,SetLogger,RestTimer,CardioLogger}.tsx`
+- NEW `src/screens/SessionSummaryScreen.tsx`
+- CHANGED `src/types/database.ts` — LoggedSet / ExerciseLog / CardioSessionLog / WorkoutSessionLocal + SetEffort / CardioIntensity
+- CHANGED `src/screens/WorkoutGuideScreen.tsx` — read-only overview → live guided session (steps, set logging, rest, cardio, pain handling, end-early)
+- CHANGED `src/screens/TodayScreen.tsx` — "Start Workout" starts session + navigates
+- CHANGED `src/navigation/{types.ts,RootNavigator.tsx}` — added SessionSummary route
+
 ### B-02 files created
 - `supabase/migrations/001_initial_schema.sql` — 15 tables, FKs, 19 indexes, RLS (15 policies), updated_at trigger
 - `supabase/seed.sql` — 12 PF beginner machines, placeholder image keys, alt_exercise_id links, idempotent
@@ -120,11 +146,11 @@
 - Screens: `src/screens/{Onboarding,Today,WorkoutGuide,Progress,Library,Settings}Screen.tsx`
 
 ## Reprioritized sequence (per D12 — auth moved late)
-Onboarding ✅ → Plan generation ✅ → Today (real plan) ✅ → Workout overview ✅ → **Set logging (next)** → *then* Auth + Supabase wiring.
+Onboarding ✅ → Plan generation ✅ → Today (real plan) ✅ → Workout overview ✅ → Guided session + set logging ✅ → **Trainer progression / recommendations (next)** → *then* Auth + Supabase wiring.
 
 ## Next task (single, after approval)
 > Per the loop rule: pick ONE item from FEATURE_BACKLOG.md, write a mini-spec, build, check, update this file, STOP.
-- **Proposed next:** Set logging + guided machine-by-machine session (FEATURE_BACKLOG **B-09/B-10/B-11/B-12**, user's "B-05") — live workout session state (Zustand), step through each machine, log weight/reps/effort/pain per set, rest timer. Still local only, no Supabase.
+- **Proposed next:** Trainer logic engine (FEATURE_BACKLOG **B-14/B-15**, user's "B-06") — pure rule engine R1–R7 consuming a completed `WorkoutSessionLocal` → `TrainerRecommendation[]` (increase/keep/reduce weight, pain→swap, etc.). Table-driven tests. Still local-only.
 - Awaiting user go-ahead.
 
 ## Decisions log

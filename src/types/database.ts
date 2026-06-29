@@ -231,3 +231,53 @@ export interface GeneratedPlan {
   daysPerWeek: number;
   days: PlanDay[]; // length = weeks * daysPerWeek
 }
+
+// ---- live workout session types (local, B-05) ----------------------------
+// What the guided session captures. Maps to workout_sessions / exercise_sets /
+// cardio_logs (+ feeds trainer_recommendations in B-06). UI uses friendly
+// effort labels; `setEffortToDbEffort()` maps them to the DB `Effort` enum.
+
+export type SetEffort = 'easy' | 'good' | 'hard';
+export type CardioIntensity = 'easy' | 'moderate' | 'hard';
+
+export interface LoggedSet {
+  setIndex: number; // 1-based
+  weightLb: number | null;
+  reps: number | null;
+  effort: SetEffort | null;
+  pain: boolean;
+}
+
+export interface ExerciseLog {
+  exerciseId: string;
+  slug: string;
+  name: string;
+  targetSets: number;
+  repMin: number;
+  repMax: number;
+  restSeconds: number;
+  sets: LoggedSet[];
+  painReported: boolean;
+  skipped: boolean;
+}
+
+export interface CardioSessionLog {
+  machine: CardioMachine;
+  plannedMinutes: number;
+  completedMinutes: number | null;
+  intensity: CardioIntensity | null;
+  skipped: boolean;
+}
+
+export type SessionStatusLocal = 'in_progress' | 'completed' | 'abandoned';
+
+export interface WorkoutSessionLocal {
+  weekNumber: number;
+  dayNumber: number;
+  dayName: string;
+  startedAtISO: string;
+  completedAtISO: string | null;
+  status: SessionStatusLocal;
+  exercises: ExerciseLog[];
+  cardio: CardioSessionLog | null;
+}

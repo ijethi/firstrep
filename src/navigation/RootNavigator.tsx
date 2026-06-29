@@ -12,6 +12,7 @@ import ProgressScreen from '../screens/ProgressScreen';
 import LibraryScreen from '../screens/LibraryScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import WorkoutGuideScreen from '../screens/WorkoutGuideScreen';
+import SessionSummaryScreen from '../screens/SessionSummaryScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -68,6 +69,11 @@ export default function RootNavigator() {
           name="WorkoutGuide"
           component={WorkoutGuideScreen}
           options={{ title: 'Workout' }}
+        />
+        <Stack.Screen
+          name="SessionSummary"
+          component={SessionSummaryScreen}
+          options={{ title: 'Workout complete', headerBackVisible: false }}
         />
       </Stack.Navigator>
     </NavigationContainer>

@@ -3,4 +3,5 @@ export type RootStackParamList = {
   Onboarding: undefined;
   Main: undefined;
   WorkoutGuide: { week?: number; dayNumber?: number } | undefined;
+  SessionSummary: undefined;
 };

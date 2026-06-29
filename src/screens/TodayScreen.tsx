@@ -8,6 +8,7 @@ import { colors, radius, spacing, typography } from '../theme';
 import { RootStackParamList } from '../navigation/types';
 import { useOnboardingStore } from '../state/onboardingStore';
 import { getPlanDay, usePlanStore } from '../state/planStore';
+import { useWorkoutSessionStore } from '../state/workoutSessionStore';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -64,8 +65,11 @@ export default function TodayScreen() {
       <Text style={[typography.caption, styles.note]}>{day.beginnerNote}</Text>
 
       <AppButton
-        label="View full workout"
-        onPress={() => navigation.navigate('WorkoutGuide', { week: 1, dayNumber: 1 })}
+        label="Start Workout"
+        onPress={() => {
+          useWorkoutSessionStore.getState().startSession(day, new Date().toISOString());
+          navigation.navigate('WorkoutGuide', { week: 1, dayNumber: 1 });
+        }}
       />
     </ScreenContainer>
   );
