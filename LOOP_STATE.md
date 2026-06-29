@@ -7,11 +7,28 @@
 ---
 
 ## Current loop
-- **Loop #:** 6 — **B-06 Local rule-based trainer engine (R1–R7)**
-- **Goal of this loop:** Pure `generateRecommendations(session, opts)` → beginner recommendations shown on the session summary. Local-only.
-- **Success condition:** Completing a session generates local recs; summary shows cards; pain = highest priority; recs map to `trainer_recommendations`; typecheck + engine assertions pass.
-- **Ceiling:** Max 3 fix attempts. (Used: 0 — passed on first checker pass.)
-- **Status:** ✅ Complete — awaiting approval for B-07.
+- **Loop #:** 7 — **B-07 Local Progress dashboard**
+- **Goal of this loop:** Save finished sessions to local history; Progress screen shows workouts/streak/sets/cardio/exercises, recent tips, strength + cardio cards, body-weight logging. Local-only.
+- **Success condition:** Completing a workout saves to history; Progress shows counts/cardio/strength; weight logging works; empty states don't crash; typecheck + stats assertions pass.
+- **Ceiling:** Max 3 fix attempts. (Used: 0 code fixes — one faulty test regex corrected, code unchanged.)
+- **Status:** ✅ Complete — awaiting approval for B-08.
+
+### Loop 7 verification (maker-checker — typecheck + executed assertions)
+| Gate | Result |
+|------|--------|
+| `npx tsc --noEmit` | ✅ PASSED |
+| Stats are PURE | ✅ `lib/progressStats.ts`, no IO/Date.now |
+| totalWorkouts / streak / sets / cardio / exercises | ✅ asserted (2-day fixture: 2/2/6/40/3) |
+| Skipped exercise handling | ✅ excluded from exercisesCompleted; sessions count reflects it |
+| Strength best/recent/learning | ✅ best=35 recent=35 sessions=2 learning=false; sparse → learning=true |
+| Cardio totals + recent machine | ✅ total/best/recent asserted |
+| Streak breaks on gap | ✅ non-consecutive → 1 |
+| Abandoned session | ✅ 0 workouts but sets still counted |
+| Body weight (kg canonical) | ✅ change=−1.5 kg; lb-first input → kg |
+| Empty states (no crash) | ✅ null/empty → zeros/nulls; UI empty copy for no-workout & no-weight |
+| Encouraging copy (not clinical) | ✅ asserted no "insufficient/metric unavailable" |
+| Maps to DB tables | ✅ history→workout_sessions/exercise_sets/cardio_logs; weights→body_weight_logs |
+| No backend/Supabase/auth/AI/nutrition/wearable/charts | ✅ |
 
 ### Loop 6 verification (maker-checker — typecheck + 15 executed assertions)
 | Gate | Result |
@@ -157,6 +174,16 @@
 - CHANGED `src/screens/WorkoutGuideScreen.tsx` — on finish, run engine + save recs (completed increments count)
 - CHANGED `src/screens/SessionSummaryScreen.tsx` — "Your next steps" rec cards
 
+### B-07 files created / changed
+- NEW `src/lib/progressStats.ts` — PURE summarize / strengthProgress / cardioProgress / weightProgress / currentStreak / weeklyMessage
+- NEW `src/state/progressStore.ts` — local history + body weights (maps to workout_sessions/exercise_sets/cardio_logs/body_weight_logs)
+- NEW `src/components/{WeightLogCard,StrengthProgressCard,CardioProgressCard}.tsx`
+- NEW `docs/PROGRESS_DASHBOARD_REVIEW.md`
+- CHANGED `src/screens/ProgressScreen.tsx` — full dashboard (stats grid, recent tips, strength/cardio cards, weight logging, empty states)
+- CHANGED `src/screens/WorkoutGuideScreen.tsx` — save finished session to progressStore on finish
+- CHANGED `src/types/database.ts` — BodyWeightEntry
+- REUSED existing `ProgressCard` for stat tiles (no new StatCard — CURSOR_RULES reuse)
+
 ### B-02 files created
 - `supabase/migrations/001_initial_schema.sql` — 15 tables, FKs, 19 indexes, RLS (15 policies), updated_at trigger
 - `supabase/seed.sql` — 12 PF beginner machines, placeholder image keys, alt_exercise_id links, idempotent
@@ -172,14 +199,14 @@
 - Screens: `src/screens/{Onboarding,Today,WorkoutGuide,Progress,Library,Settings}Screen.tsx`
 
 ## Reprioritized sequence (per D12 — auth moved late)
-Onboarding ✅ → Plan generation ✅ → Today (real plan) ✅ → Workout overview ✅ → Guided session + set logging ✅ → Trainer recommendations ✅ → **next: Progress dashboard OR plan-progression apply OR Auth/Supabase** → *then* remaining P1.
+Onboarding ✅ → Plan generation ✅ → Today ✅ → Workout overview ✅ → Guided session + set logging ✅ → Trainer recommendations ✅ → Progress dashboard ✅ → **next: B-08 (TBD)** → *then* Auth + Supabase persistence.
 
-## Next task (single, after approval) — user to choose
+## Next task (single, after approval) — user to choose B-08
 > Per the loop rule: pick ONE item from FEATURE_BACKLOG.md, write a mini-spec, build, check, update this file, STOP.
-- **Candidate A (B-07, suggested):** Progress dashboard (B-18) — weight trend, streak, cardio minutes, strength PRs from local stores. (Still local; no nutrition.)
-- **Candidate B:** Apply recommendations to next session (feed R2/R4 weight deltas into `suggested_weight_lb` so the next workout pre-fills adjusted weights).
-- **Candidate C:** Begin Auth + Supabase wiring (persistence) — the deferred D12 work.
-- Awaiting user direction on B-07 scope.
+- **Candidate A:** Apply recommendations → next session (feed R2/R4 deltas into next workout's suggested weights; advance week on consistency).
+- **Candidate B:** Weekly check-in flow (B-20) + Exercise Library screen (B-21) + Settings (B-22) — finish the remaining local screens.
+- **Candidate C:** Begin Auth + Supabase persistence (deferred D12) — first real backend wiring + offline-tolerant logging.
+- Awaiting user direction on B-08 scope.
 
 ## Decisions log
 | # | Decision | Rationale | Date |

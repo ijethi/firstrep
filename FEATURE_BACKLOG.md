@@ -37,8 +37,8 @@
 
 ## Epic E — Cardio & Progress (P1)
 - [ ] **B-16** Cardio tracking screen (S) — machine picker, timer/manual, writes `cardio_logs`. *Success: logs minutes, adds to weekly total.*
-- [ ] **B-17** Body weight + measurements logging (S) — quick entry, writes logs (kg canonical). *Success: entry shows on dashboard.*
-- [ ] **B-18** Progress dashboard (L) — weight trend chart, streak, cardio minutes, strength PRs, empty states. *Success: charts render with ≥2 data points; friendly empties.*
+- [~] **B-17** Body weight + measurements logging (S) — ✅ body weight done in Loop 7 (kg canonical, on dashboard). Body measurements (waist/hip/etc) still TODO.
+- [x] **B-18** Progress dashboard (L) — ✅ Loop 7 (user-sequence "B-07"). Card-based dashboard: workouts/streak/sets/cardio/exercises, recent tips, strength + cardio cards, body-weight logging, empty states. Pure tested stats. (Charts deferred — cards only per scope.)
 - [ ] **B-19** Progress photos (M) — capture/upload to private bucket, signed URLs, grid. *Success: photo uploads, only owner can view.*
 
 ## Epic F — Check-in & Library & Settings (P1)

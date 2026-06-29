@@ -2,32 +2,98 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { ProgressCard, ScreenContainer } from '../components';
+import CardioProgressCard from '../components/CardioProgressCard';
+import StrengthProgressCard from '../components/StrengthProgressCard';
+import TrainerRecommendationCard from '../components/TrainerRecommendationCard';
+import WeightLogCard from '../components/WeightLogCard';
 import { colors, spacing, typography } from '../theme';
+import {
+  cardioProgress,
+  strengthProgress,
+  summarize,
+  weeklyMessage,
+  weightProgress,
+} from '../lib/progressStats';
+import { useProgressStore } from '../state/progressStore';
+import { useRecommendationStore } from '../state/recommendationStore';
+import { useOnboardingStore } from '../state/onboardingStore';
 
 export default function ProgressScreen() {
+  const history = useProgressStore((s) => s.history);
+  const bodyWeights = useProgressStore((s) => s.bodyWeights);
+  const addBodyWeight = useProgressStore((s) => s.addBodyWeight);
+  const recommendations = useRecommendationStore((s) => s.recommendations);
+  const unit = useOnboardingStore((s) => s.answers.unitPref);
+
+  const summary = summarize(history);
+  const weight = weightProgress(bodyWeights);
+  const noWorkouts = summary.totalWorkouts === 0;
+
   return (
     <ScreenContainer scroll>
       <Text style={typography.h1}>Progress</Text>
-      <Text style={[typography.body, styles.muted]}>
-        You showed up 3 times this week. That&apos;s how change happens.
-      </Text>
+      <Text style={[typography.body, styles.message]}>{weeklyMessage(summary.totalWorkouts)}</Text>
 
-      <View style={styles.grid}>
-        <ProgressCard title="Workout streak" value="3 days" emoji="🔥" />
-        <ProgressCard title="Cardio this week" value="45 min" emoji="🏃" />
-        <ProgressCard
-          title="Body weight"
-          value="—"
-          caption="Log today's weight to start your trend"
-          emoji="⚖️"
-        />
-        <ProgressCard title="Strength PR" value="Leg press 50 → 70 lb" emoji="💪" />
-      </View>
+      {noWorkouts ? (
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyText}>Finish your first workout to see progress here.</Text>
+        </View>
+      ) : (
+        <>
+          <View style={styles.grid}>
+            <View style={styles.col}>
+              <ProgressCard title="Workouts" value={String(summary.totalWorkouts)} emoji="✅" />
+            </View>
+            <View style={styles.col}>
+              <ProgressCard title="Day streak" value={String(summary.currentStreak)} emoji="🔥" />
+            </View>
+          </View>
+          <View style={styles.grid}>
+            <View style={styles.col}>
+              <ProgressCard title="Sets logged" value={String(summary.totalSets)} emoji="🏋️" />
+            </View>
+            <View style={styles.col}>
+              <ProgressCard title="Cardio min" value={String(summary.totalCardioMinutes)} emoji="🏃" />
+            </View>
+          </View>
+          <ProgressCard
+            title="Exercises completed"
+            value={String(summary.exercisesCompleted)}
+            emoji="🎯"
+          />
+
+          {recommendations.length > 0 ? (
+            <View style={styles.section}>
+              <Text style={typography.h2}>Recent tips</Text>
+              {recommendations.slice(0, 3).map((rec, i) => (
+                <TrainerRecommendationCard key={`${rec.ruleId}-${rec.exerciseId ?? 'x'}-${i}`} rec={rec} />
+              ))}
+            </View>
+          ) : null}
+
+          <StrengthProgressCard items={strengthProgress(history)} />
+          <CardioProgressCard stats={cardioProgress(history)} />
+        </>
+      )}
+
+      <WeightLogCard
+        stats={weight}
+        unit={unit}
+        onAdd={(kg) => addBodyWeight(kg, new Date().toISOString())}
+      />
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  muted: { color: colors.textMuted },
-  grid: { gap: spacing.md },
+  message: { color: colors.textMuted },
+  emptyCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: spacing.lg,
+  },
+  emptyText: { ...typography.body, color: colors.textMuted },
+  grid: { flexDirection: 'row', gap: spacing.md },
+  col: { flex: 1 },
+  section: { gap: spacing.sm },
 });

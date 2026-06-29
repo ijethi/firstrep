@@ -13,6 +13,7 @@ import { RootStackParamList } from '../navigation/types';
 import { getPlanDay, usePlanStore } from '../state/planStore';
 import { useWorkoutSessionStore } from '../state/workoutSessionStore';
 import { useRecommendationStore } from '../state/recommendationStore';
+import { useProgressStore } from '../state/progressStore';
 import { generateRecommendations } from '../lib/trainerEngine';
 
 type GuideRoute = RouteProp<RootStackParamList, 'WorkoutGuide'>;
@@ -74,6 +75,7 @@ export default function WorkoutGuideScreen() {
     const finished = useWorkoutSessionStore.getState().session;
     const recs = generateRecommendations(finished, { nowISO: now, priorCompletedCount });
     useRecommendationStore.getState().setRecommendations(recs);
+    if (finished) useProgressStore.getState().addSession(finished); // save to local history
     if (status === 'completed') useRecommendationStore.getState().registerCompletion();
     navigation.replace('SessionSummary');
   };

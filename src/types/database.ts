@@ -310,3 +310,13 @@ export interface TrainerRec {
   generatedAtISO: string;
   source: 'rule_based';
 }
+
+// ---- local progress types (B-07) -----------------------------------------
+// Body weight stored CANONICALLY in kg (D7); the UI converts at the edge.
+// Maps to the `body_weight_logs` table (weight_kg, logged_on, source).
+
+export interface BodyWeightEntry {
+  weightKg: number;
+  loggedOnISO: string; // ISO timestamp; date portion = logged_on
+  source: 'manual';
+}
