@@ -9,7 +9,8 @@ import { RootStackParamList } from './types';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import TodayScreen from '../screens/TodayScreen';
 import ProgressScreen from '../screens/ProgressScreen';
-import LibraryScreen from '../screens/LibraryScreen';
+import ExerciseLibraryScreen from '../screens/ExerciseLibraryScreen';
+import ExerciseDetailScreen from '../screens/ExerciseDetailScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import WorkoutGuideScreen from '../screens/WorkoutGuideScreen';
 import SessionSummaryScreen from '../screens/SessionSummaryScreen';
@@ -44,7 +45,7 @@ function MainTabs() {
       />
       <Tab.Screen
         name="Library"
-        component={LibraryScreen}
+        component={ExerciseLibraryScreen}
         options={{ tabBarIcon: ({ focused }) => <TabIcon label="📚" focused={focused} /> }}
       />
       <Tab.Screen
@@ -78,6 +79,11 @@ export default function RootNavigator() {
           name="SessionSummary"
           component={SessionSummaryScreen}
           options={{ title: 'Workout complete', headerBackVisible: false }}
+        />
+        <Stack.Screen
+          name="ExerciseDetail"
+          component={ExerciseDetailScreen}
+          options={{ title: 'Machine guide' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

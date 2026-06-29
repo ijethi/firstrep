@@ -4,4 +4,5 @@ export type RootStackParamList = {
   Main: undefined;
   WorkoutGuide: { week?: number; dayNumber?: number } | undefined;
   SessionSummary: undefined;
+  ExerciseDetail: { slug: string };
 };

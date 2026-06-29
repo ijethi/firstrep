@@ -1,9 +1,9 @@
 import type { MachineType, MuscleGroup, CardioMachine } from '../types/database';
 
 /**
- * Local exercise catalog (B-04) — mirrors `supabase/seed.sql`.
- * Used by the plan generator while there is no live DB. Local `id` is the slug;
- * it maps to `exercises.id` once a real catalog is provisioned.
+ * Local exercise catalog (B-04, extended in B-11) — mirrors `supabase/seed.sql`
+ * plus beginner-detail fields used by the Exercise Library. This is the SINGLE
+ * SOURCE OF TRUTH for exercise data; screens must not duplicate it.
  */
 export interface CatalogExercise {
   id: string; // = slug
@@ -12,8 +12,11 @@ export interface CatalogExercise {
   muscleGroup: MuscleGroup;
   machineType: MachineType;
   worksPlain: string;
+  primaryMuscles: string[]; // beginner-readable muscles trained (B-11)
   setupSteps: string[];
   formTips: string[];
+  commonMistakes: string[]; // beginner mistakes to avoid (B-11)
+  safetyNote: string; // machine-specific safety note (B-11)
   defaultSets: number | null;
   defaultRepMin: number | null;
   defaultRepMax: number | null;
@@ -33,13 +36,20 @@ export const EXERCISE_CATALOG: CatalogExercise[] = [
     muscleGroup: 'chest',
     machineType: 'machine',
     worksPlain: 'Works your chest, shoulders, and arms',
+    primaryMuscles: ['Chest', 'Shoulders', 'Triceps'],
     setupSteps: [
       'Sit with your back flat against the pad.',
       'Set the seat so the handles line up with your chest.',
       'Grab the handles and push forward until arms are almost straight.',
       'Slowly bring the handles back.',
     ],
-    formTips: ["Keep your back against the pad the whole time.", "Don't lock your elbows.", 'Breathe out as you push.'],
+    formTips: ['Keep your back against the pad the whole time.', "Don't lock your elbows.", 'Breathe out as you push.'],
+    commonMistakes: [
+      'Letting the handles slam back toward you',
+      'Lifting your back off the pad to push harder',
+      'Snapping your elbows straight at the end',
+    ],
+    safetyNote: 'Keep the movement smooth. If your shoulders pinch, lower the weight.',
     defaultSets: 3,
     defaultRepMin: 10,
     defaultRepMax: 12,
@@ -55,6 +65,7 @@ export const EXERCISE_CATALOG: CatalogExercise[] = [
     muscleGroup: 'back',
     machineType: 'machine',
     worksPlain: 'Works your back and arms',
+    primaryMuscles: ['Upper back (lats)', 'Biceps'],
     setupSteps: [
       'Sit down and tuck your knees under the pad.',
       'Grab the wide bar with both hands.',
@@ -62,6 +73,12 @@ export const EXERCISE_CATALOG: CatalogExercise[] = [
       'Slowly let it rise back up.',
     ],
     formTips: ['Lead with your elbows, not your hands.', 'Squeeze your shoulder blades together.', 'Avoid leaning too far back.'],
+    commonMistakes: [
+      'Leaning way back to yank the bar down',
+      'Pulling the bar behind your neck',
+      'Using mostly your arms instead of your back',
+    ],
+    safetyNote: 'Pull the bar to your chest — never behind your neck.',
     defaultSets: 3,
     defaultRepMin: 10,
     defaultRepMax: 12,
@@ -77,6 +94,7 @@ export const EXERCISE_CATALOG: CatalogExercise[] = [
     muscleGroup: 'back',
     machineType: 'machine',
     worksPlain: 'Works your back and arms',
+    primaryMuscles: ['Mid-back', 'Biceps'],
     setupSteps: [
       'Sit with your chest against the pad.',
       'Grab the handles with both hands.',
@@ -84,6 +102,8 @@ export const EXERCISE_CATALOG: CatalogExercise[] = [
       'Slowly return to the start.',
     ],
     formTips: ['Keep your chest on the pad.', 'Pull your elbows straight back.', "Don't shrug your shoulders up."],
+    commonMistakes: ['Rounding your back', 'Shrugging your shoulders up to your ears', 'Jerking the weight back'],
+    safetyNote: 'Keep your chest on the pad and move slowly — no jerking.',
     defaultSets: 3,
     defaultRepMin: 10,
     defaultRepMax: 12,
@@ -99,6 +119,7 @@ export const EXERCISE_CATALOG: CatalogExercise[] = [
     muscleGroup: 'shoulders',
     machineType: 'machine',
     worksPlain: 'Works your shoulders and arms',
+    primaryMuscles: ['Shoulders', 'Triceps'],
     setupSteps: [
       'Sit with your back flat against the pad.',
       'Set the seat so handles start near your shoulders.',
@@ -106,6 +127,8 @@ export const EXERCISE_CATALOG: CatalogExercise[] = [
       'Lower them back down slowly.',
     ],
     formTips: ['Keep your core tight.', "Don't arch your lower back.", 'Stop just before locking your elbows.'],
+    commonMistakes: ['Arching your lower back to press up', 'Locking your elbows hard at the top', 'Choosing too much weight too soon'],
+    safetyNote: 'If pressing overhead bothers your shoulder, stop and try the chest press instead.',
     defaultSets: 3,
     defaultRepMin: 10,
     defaultRepMax: 12,
@@ -121,6 +144,7 @@ export const EXERCISE_CATALOG: CatalogExercise[] = [
     muscleGroup: 'legs',
     machineType: 'machine',
     worksPlain: 'Works your thighs and glutes',
+    primaryMuscles: ['Thighs (quads)', 'Glutes', 'Hamstrings'],
     setupSteps: [
       'Sit back into the seat.',
       'Place your feet flat, shoulder-width on the platform.',
@@ -128,6 +152,8 @@ export const EXERCISE_CATALOG: CatalogExercise[] = [
       'Slowly bend your knees to return.',
     ],
     formTips: ["Don't lock your knees at the top.", 'Keep your knees in line with your toes.', 'Push through your heels.'],
+    commonMistakes: ['Locking your knees at the top', 'Letting your knees cave inward', 'Lifting your hips off the seat'],
+    safetyNote: 'Never lock your knees. Keep a controlled, comfortable range of motion.',
     defaultSets: 3,
     defaultRepMin: 10,
     defaultRepMax: 12,
@@ -143,6 +169,7 @@ export const EXERCISE_CATALOG: CatalogExercise[] = [
     muscleGroup: 'legs',
     machineType: 'machine',
     worksPlain: 'Works the front of your thighs',
+    primaryMuscles: ['Front of thighs (quads)'],
     setupSteps: [
       'Sit back with knees bent over the seat edge.',
       'Set the pad to rest on your lower shins.',
@@ -150,6 +177,8 @@ export const EXERCISE_CATALOG: CatalogExercise[] = [
       'Slowly lower back down.',
     ],
     formTips: ['Move slowly and with control.', 'Squeeze your thighs at the top.', "Don't swing the weight."],
+    commonMistakes: ['Swinging the weight up with momentum', 'Going too heavy', 'Banging the weight stack on the way down'],
+    safetyNote: 'If your knees ache, reduce the weight or choose a different leg machine.',
     defaultSets: 3,
     defaultRepMin: 10,
     defaultRepMax: 12,
@@ -165,6 +194,7 @@ export const EXERCISE_CATALOG: CatalogExercise[] = [
     muscleGroup: 'legs',
     machineType: 'machine',
     worksPlain: 'Works the back of your thighs',
+    primaryMuscles: ['Back of thighs (hamstrings)'],
     setupSteps: [
       'Sit with the pad resting on top of your lower legs.',
       'Adjust the thigh pad so it holds you in place.',
@@ -172,6 +202,8 @@ export const EXERCISE_CATALOG: CatalogExercise[] = [
       'Slowly return to the start.',
     ],
     formTips: ['Keep your back against the seat.', 'Control the weight on the way back.', "Don't rush the reps."],
+    commonMistakes: ['Rushing the reps', 'Lifting your hips off the seat', 'Skipping the pad adjustment'],
+    safetyNote: 'Move slowly and keep your back against the seat the whole time.',
     defaultSets: 3,
     defaultRepMin: 10,
     defaultRepMax: 12,
@@ -187,6 +219,7 @@ export const EXERCISE_CATALOG: CatalogExercise[] = [
     muscleGroup: 'glutes',
     machineType: 'machine',
     worksPlain: 'Works your outer hips and glutes',
+    primaryMuscles: ['Outer hips', 'Glutes'],
     setupSteps: [
       'Sit with your back against the pad.',
       'Place your outer thighs against the pads.',
@@ -194,6 +227,8 @@ export const EXERCISE_CATALOG: CatalogExercise[] = [
       'Slowly bring them back together.',
     ],
     formTips: ['Move in a slow, controlled way.', 'Keep your back against the seat.', "Don't use momentum."],
+    commonMistakes: ['Using momentum to fling your knees out', 'Leaning forward', 'Going too fast'],
+    safetyNote: 'Control the movement in both directions — no bouncing.',
     defaultSets: 3,
     defaultRepMin: 12,
     defaultRepMax: 15,
@@ -209,6 +244,7 @@ export const EXERCISE_CATALOG: CatalogExercise[] = [
     muscleGroup: 'legs',
     machineType: 'machine',
     worksPlain: 'Works your inner thighs',
+    primaryMuscles: ['Inner thighs'],
     setupSteps: [
       'Sit with your back against the pad.',
       'Place your inner thighs against the pads, knees apart.',
@@ -216,6 +252,8 @@ export const EXERCISE_CATALOG: CatalogExercise[] = [
       'Slowly let them open back out.',
     ],
     formTips: ['Control the weight in both directions.', 'Keep your back against the seat.', "Don't let the pads slam open."],
+    commonMistakes: ['Letting the pads snap open', 'Using too much weight', 'Holding your breath'],
+    safetyNote: 'Ease the pads open slowly — never force the stretch.',
     defaultSets: 3,
     defaultRepMin: 12,
     defaultRepMax: 15,
@@ -231,6 +269,7 @@ export const EXERCISE_CATALOG: CatalogExercise[] = [
     muscleGroup: 'cardio',
     machineType: 'cardio',
     worksPlain: 'Cardio — burns extra calories',
+    primaryMuscles: ['Heart & lungs', 'Legs'],
     setupSteps: [
       'Step on and clip the safety key to your shirt.',
       'Start at a slow walk (about 2.5 mph).',
@@ -238,6 +277,8 @@ export const EXERCISE_CATALOG: CatalogExercise[] = [
       'Walk at a pace where you can still talk.',
     ],
     formTips: ["Don't hold the handrails the whole time.", 'Stand tall, look ahead.', 'Start slow and build up your minutes.'],
+    commonMistakes: ['Holding the rails the whole time', 'Starting too fast', 'Looking down at your feet'],
+    safetyNote: 'Clip the safety key on and start at an easy pace you can sustain.',
     defaultSets: null,
     defaultRepMin: null,
     defaultRepMax: null,
@@ -253,6 +294,7 @@ export const EXERCISE_CATALOG: CatalogExercise[] = [
     muscleGroup: 'cardio',
     machineType: 'cardio',
     worksPlain: 'Cardio — easy on the joints',
+    primaryMuscles: ['Heart & lungs', 'Full body'],
     setupSteps: [
       'Step onto the pedals and hold the moving handles.',
       'Start pedaling at a steady, easy pace.',
@@ -260,6 +302,8 @@ export const EXERCISE_CATALOG: CatalogExercise[] = [
       'Keep a rhythm you can sustain.',
     ],
     formTips: ['Keep your posture upright.', 'Push and pull with both arms and legs.', 'Aim for a talk-friendly pace.'],
+    commonMistakes: ['Leaning your weight on the handles', 'Going too hard too soon', 'Choppy, short strides'],
+    safetyNote: 'Keep an upright posture and a pace where you can still talk.',
     defaultSets: null,
     defaultRepMin: null,
     defaultRepMax: null,
@@ -275,6 +319,7 @@ export const EXERCISE_CATALOG: CatalogExercise[] = [
     muscleGroup: 'cardio',
     machineType: 'cardio',
     worksPlain: 'Cardio — strong calorie burn',
+    primaryMuscles: ['Heart & lungs', 'Legs & glutes'],
     setupSteps: [
       'Step on and hold the rails to steady yourself.',
       'Start at the lowest speed.',
@@ -282,6 +327,8 @@ export const EXERCISE_CATALOG: CatalogExercise[] = [
       'Increase speed only when it feels easy.',
     ],
     formTips: ["Don't lean heavily on the rails.", 'Keep your steps full, not tiny.', 'Start with short sessions and build up.'],
+    commonMistakes: ['Leaning heavily on the rails', 'Taking tiny, quick steps', 'Starting too fast'],
+    safetyNote: 'Hold the rails lightly for balance and slow down anytime.',
     defaultSets: null,
     defaultRepMin: null,
     defaultRepMax: null,

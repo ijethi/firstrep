@@ -7,11 +7,26 @@
 ---
 
 ## Current loop
-- **Loop #:** 10 — **B-10 Local persistence (AsyncStorage + Zustand persist)**
-- **Goal of this loop:** Persist onboarding/plan/progress/history/body-weights/recommendations across reloads; gate hydration (no onboarding flicker); reset utility. Live session NOT persisted. Local only.
-- **Success condition:** Data survives reload; onboarding skipped after completion; Today shows correct next workout; history/weights/recs persist; live session not restored broken; typecheck + persistence assertions pass.
-- **Ceiling:** Max 3 fix attempts. (Used: 0 — passed on first checker pass.)
-- **Status:** ✅ Complete — awaiting approval for B-11.
+- **Loop #:** 11 — **B-11 Exercise Library build-out**
+- **Goal of this loop:** Real Exercise Library over the catalog: list, search, filters, detail view (setup/form/mistakes/safety/alternative). Local only; catalog is single source of truth.
+- **Success condition:** Library lists all catalog machines; search + filters work (incl. empty/no-results); detail shows setup/form/mistakes/safety; placeholders render; typecheck + filter/search assertions pass.
+- **Ceiling:** Max 3 fix attempts. (Used: 0 code fixes — one wrong test expectation corrected, code unchanged.)
+- **Status:** ✅ Complete — awaiting approval for B-12.
+
+### Loop 11 verification (maker-checker — typecheck + executed assertions)
+| Gate | Result |
+|------|--------|
+| `npx tsc --noEmit` | ✅ PASSED |
+| Catalog = single source of truth | ✅ added primaryMuscles/commonMistakes/safetyNote to catalog; screens read it |
+| Lists all 12 machines | ✅ |
+| Search (name/muscle/primary muscle, case-insensitive) | ✅ asserted |
+| Filters (all/upper/lower/cardio/core/beginner_safe) | ✅ asserted; core → 0 empty handled |
+| Empty / whitespace / nonsense query | ✅ all-or-none, no crash |
+| Detail view (setup/form/mistakes/safety/guidance/alt) | ✅ + universal "Stop if you feel sharp pain." |
+| Missing image keys | ✅ placeholder renders, no crash |
+| Alternative (altSlug) tappable | ✅ push to that detail |
+| Maps to DB (`exercises`) | ✅ new fields + alt_exercise_id |
+| No backend/Supabase/auth/AI/nutrition/analytics/wearable/video | ✅ |
 
 ### Loop 10 verification (maker-checker — typecheck + 11 executed assertions)
 | Gate | Result |
@@ -265,6 +280,16 @@
 - CHANGED `src/screens/SettingsScreen.tsx` — "Reset local data" button + confirm
 - CHANGED `package.json` — added `@react-native-async-storage/async-storage`
 
+### B-11 files created / changed
+- NEW `src/lib/exerciseLibrary.ts` — PURE categoryOf / filterExercises / alternativeFor / CATEGORY_LABEL
+- NEW `src/components/{SearchBar,FilterPill,ExerciseLibraryCard}.tsx`
+- NEW `src/screens/{ExerciseLibraryScreen,ExerciseDetailScreen}.tsx`
+- NEW `docs/EXERCISE_LIBRARY_REVIEW.md`
+- CHANGED `src/data/exerciseCatalog.ts` — added primaryMuscles / commonMistakes / safetyNote (catalog = source of truth)
+- CHANGED `src/navigation/{types.ts,RootNavigator.tsx}` — ExerciseDetail route; Library tab → ExerciseLibraryScreen
+- REMOVED `src/screens/LibraryScreen.tsx` (placeholder superseded)
+- NOTE: `components/ExerciseCard.tsx` now unused by screens; kept as generic reusable component
+
 ### B-02 files created
 - `supabase/migrations/001_initial_schema.sql` — 15 tables, FKs, 19 indexes, RLS (15 policies), updated_at trigger
 - `supabase/seed.sql` — 12 PF beginner machines, placeholder image keys, alt_exercise_id links, idempotent
@@ -280,15 +305,14 @@
 - Screens: `src/screens/{Onboarding,Today,WorkoutGuide,Progress,Library,Settings}Screen.tsx`
 
 ## Reprioritized sequence (per D12 — auth moved late)
-Onboarding ✅ → Plan generation ✅ → Today ✅ → Workout overview ✅ → Guided session + set logging ✅ → Trainer recommendations ✅ → Progress dashboard ✅ → Adaptive next-workout ✅ → Multi-day navigation/progression ✅ → Local persistence ✅ → **next: B-11 (TBD)** → *then* Auth + Supabase sync.
+Onboarding ✅ → Plan generation ✅ → Today ✅ → Workout overview ✅ → Guided session + set logging ✅ → Trainer recommendations ✅ → Progress dashboard ✅ → Adaptive next-workout ✅ → Multi-day navigation/progression ✅ → Local persistence ✅ → Exercise Library ✅ → **next: B-12 (TBD)** → *then* Auth + Supabase sync.
 
-## Next task (single, after approval) — user to choose B-11
+## Next task (single, after approval) — user to choose B-12
 > Per the loop rule: pick ONE item from FEATURE_BACKLOG.md, write a mini-spec, build, check, update this file, STOP.
-- **Candidate A:** Exercise Library screen (B-21) — browse all machines (read-only) from the catalog, search/filter, detail view. Local only.
-- **Candidate B:** Weekly check-in flow (B-20) — weight/energy/soreness entry + week summary (local).
-- **Candidate C:** Settings/profile build-out (B-22) — edit profile, update injuries → regenerate safe plan, restart plan, unit toggle.
-- **Candidate D:** Begin Auth + Supabase sync (deferred D12) — first real backend wiring.
-- Awaiting user direction on B-11 scope.
+- **Candidate A:** Weekly check-in flow (B-20) — weight/energy/soreness entry + week summary (local).
+- **Candidate B:** Settings/profile build-out (B-22) — edit profile, update injuries → regenerate safe plan, restart plan, unit toggle. Also link Library detail from the live machine guide.
+- **Candidate C:** Begin Auth + Supabase sync (deferred D12) — first real backend wiring.
+- Awaiting user direction on B-12 scope.
 
 ## Decisions log
 | # | Decision | Rationale | Date |

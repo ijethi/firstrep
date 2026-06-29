@@ -44,7 +44,7 @@
 
 ## Epic F — Check-in & Library & Settings (P1)
 - [ ] **B-20** Weekly check-in flow (M) — due detection, form, runs R5–R7, shows trainer message + unlock. *Success: check-in writes row + recommendation.*
-- [ ] **B-21** Exercise library screen (S) — search/filter, detail view (read-only). *Success: search 'back' filters correctly.*
+- [x] **B-21** Exercise library screen (S) — ✅ Loop 11 (user-sequence "B-11"). List + search + filters (upper/lower/cardio/core/beginner-safe) + detail (setup/form/mistakes/safety/guidance/alternative). Catalog extended with primaryMuscles/commonMistakes/safetyNote. Pure filter logic tested.
 - [ ] **B-22** Settings/profile (S) — edit profile, prefs, update injuries (re-plan), restart plan, disclaimer, sign out. *Success: injury update regenerates safe plan.*
 
 ## Epic G — Polish & connector prep (P1/P2)
