@@ -1,0 +1,64 @@
+# FEATURE_BACKLOG.md — Loop-sized tasks
+
+> Each item is ONE development loop: small, independent, with a success condition.
+> Loop rule: pick ONE, mini-spec it, build, check against spec, update LOOP_STATE, STOP.
+> Ceiling: deliver or report blockers after max 3 attempts.
+> Priority: P0 = MVP critical path, P1 = MVP important, P2 = post-MVP. Last updated: 2026-06-28
+
+---
+
+## Legend
+`[ ]` todo · `[~]` in progress · `[x]` done · `(est)` rough size: S/M/L
+
+---
+
+## Epic A — Foundation (P0)
+- [ ] **B-01** Project scaffold (S) — Expo app boots, bottom-tab navigation shell (Today/Progress/Library/Profile), design tokens (colors, spacing, type), big-button component. *Success: app runs on Expo Go, 4 empty tab screens render.*
+- [ ] **B-02** Supabase project + schema migration (M) — create project, run SQL for all 15 tables + RLS + indexes. *Success: tables exist, RLS on, can't read another user's rows.*
+- [~] **B-03** Auth flow (M) — **DEFERRED (D12)** until after onboarding + plan-gen + Today + workout guide + set logging. email magic-link/OTP sign-up + sign-in, session persistence, `users`/`user_profiles` row bootstrap. *Success: sign in, refresh app, still logged in.*
+- [x] **B-04** Exercise catalog seed (M) — ✅ delivered as SQL files in Loop 2 (`supabase/seed.sql`, 12 machines, idempotent). DB load deferred until provisioning.
+
+## Epic B — Onboarding & Planning (P0)
+- [x] **B-05** Onboarding quiz UI (M) — ✅ delivered in Loop 3 (user-sequence "B-03"). 11-step wizard, Zustand local store, maps to `onboarding_answers`/`user_profiles` shapes (write to DB deferred). *Success met: quiz completes, answers stored locally.*
+- [ ] **B-06** Plan generator (M) — pure function: profile → `workout_plans`+`workout_days`+`workout_exercises` (4 weeks, days/week, injury-safe filter using alt/exclusions). *Success: valid plan generated; injured area excluded.*
+
+## Epic C — Today & Workout session (P0)
+- [ ] **B-07** Today screen (M) — today's workout card, cardio chip, habit goal, streak, Start button; rest-day + no-plan empty states. *Success: shows correct day from plan.*
+- [ ] **B-08** Workout overview screen (S) — ordered exercise list + Start. *Success: lists day's exercises, Start enters guide.*
+- [ ] **B-09** Machine guide screen (M) — image, plain description, setup steps, sets/reps, suggested weight, form tips, swap/skip. *Success: renders exercise 1..n with progress indicator.*
+- [ ] **B-10** Session state store (Zustand) (M) — track current exercise/set, resumable session, in_progress `workout_sessions` row. *Success: close & reopen app mid-workout → resume prompt works.*
+- [ ] **B-11** Set logging screen (S) — weight/reps steppers, effort, pain toggle; writes `exercise_sets`. *Success: set persists, returns to flow.*
+- [ ] **B-12** Rest timer (S) — countdown ring, ±15s, skip, haptic, next-set preview. *Success: counts down, auto-advances.*
+- [ ] **B-13** Session summary + complete (S) — mark `workout_sessions.completed`, 1-tap overall feel, update streak. *Success: completed session counts toward streak/unlock.*
+
+## Epic D — Trainer logic (P0)
+- [ ] **B-14** Rule engine R1–R4 (M) — per-exercise recommendations + tests; writes `trainer_recommendations`; updates `suggested_weight_lb`. *Success: table-driven tests pass; pain overrides.*
+- [ ] **B-15** Rule engine R5–R7 (M) — restart-easier, nutrition-review, congratulate-unlock + tests. *Success: tests pass; week unlock works.*
+
+## Epic E — Cardio & Progress (P1)
+- [ ] **B-16** Cardio tracking screen (S) — machine picker, timer/manual, writes `cardio_logs`. *Success: logs minutes, adds to weekly total.*
+- [ ] **B-17** Body weight + measurements logging (S) — quick entry, writes logs (kg canonical). *Success: entry shows on dashboard.*
+- [ ] **B-18** Progress dashboard (L) — weight trend chart, streak, cardio minutes, strength PRs, empty states. *Success: charts render with ≥2 data points; friendly empties.*
+- [ ] **B-19** Progress photos (M) — capture/upload to private bucket, signed URLs, grid. *Success: photo uploads, only owner can view.*
+
+## Epic F — Check-in & Library & Settings (P1)
+- [ ] **B-20** Weekly check-in flow (M) — due detection, form, runs R5–R7, shows trainer message + unlock. *Success: check-in writes row + recommendation.*
+- [ ] **B-21** Exercise library screen (S) — search/filter, detail view (read-only). *Success: search 'back' filters correctly.*
+- [ ] **B-22** Settings/profile (S) — edit profile, prefs, update injuries (re-plan), restart plan, disclaimer, sign out. *Success: injury update regenerates safe plan.*
+
+## Epic G — Polish & connector prep (P1/P2)
+- [ ] **B-23** Resumable-session + offline-tolerant logging (M, P1) — queue writes, retry. *Success: log a set offline, syncs on reconnect.*
+- [ ] **B-24** `TrainerProvider` interface + LLM stub (M, P2) — abstract rule vs llm; OpenAI stub behind flag. *Success: swap provider, UI unchanged, rules still fallback.*
+- [ ] **B-25** Wearable sync connector stub (M, P2) — Health/Fit import for weight & cardio (`source='wearable'`). *Success: imported row tagged source.*
+- [ ] **B-26** Nutrition review deep-link (S, P2) — R6 links to guidance/connector. *Success: tapping recommendation opens content.*
+
+---
+
+## Suggested loop order (critical path to first usable build)
+B-01 → B-02 → B-03 → B-04 → B-05 → B-06 → B-07 → B-08 → B-09 → B-10 → B-11 → B-12 → B-13 → B-14 → then P1 epics.
+
+## Parallelizable / isolatable tasks (worktree candidates)
+- B-04 (seed) independent of UI once B-02 done.
+- B-14/B-15 (rule engine) are pure logic — buildable in isolation with fixtures, no UI dependency.
+- B-21 (library) only needs B-04.
+- B-18 charts can be prototyped against mock data.
