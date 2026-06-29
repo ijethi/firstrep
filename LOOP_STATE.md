@@ -7,11 +7,28 @@
 ---
 
 ## Current loop
-- **Loop #:** 3 — **B-03 Onboarding quiz (local state only)**
-- **Goal of this loop:** 11-step beginner onboarding quiz; answers in local Zustand store; land on Today. No Supabase/auth/AI/plan-gen.
-- **Success condition:** Starts at onboarding; forward/back nav; required fields enforced; answers stored locally; lands on Today with the "plan is ready" message; typecheck clean.
+- **Loop #:** 4 — **B-04 Local rule-based plan generation**
+- **Goal of this loop:** Pure `generatePlan(answers)` → 4-week beginner weight-loss plan in local Zustand store; Today shows W1D1; overview screen. No backend/Supabase/auth/AI/nutrition.
+- **Success condition:** Onboarding completion generates a local 4-week plan; Today shows W1D1; respects days/week + injury safety; typecheck clean.
 - **Ceiling:** Max 3 fix attempts. (Used: 0 — passed on first checker pass.)
-- **Status:** ✅ Complete — awaiting approval for B-04 (plan generation).
+- **Status:** ✅ Complete — awaiting approval for B-05 (set logging).
+
+### Loop 4 verification (maker-checker — typecheck + executed assertions)
+| Gate | Result |
+|------|--------|
+| `npx tsc --noEmit` | ✅ PASSED |
+| Generator is PURE | ✅ no Date/random/IO; identical output for identical input (asserted) |
+| Days/week adaptation | ✅ 2→8 days, 3→12, 4→16 (asserted) |
+| Duration adaptation | ✅ 20min→3 / 30→4 / 45→5 strength exercises |
+| Day structure matches spec | ✅ 3-day = A / Cardio+Core / B; 4-day adds Cardio+Machines Light; 2-day = A / B |
+| Injury: knee | ✅ drops `leg-extension`, swaps stair-climber→elliptical (asserted) |
+| Injury: shoulder | ✅ drops `shoulder-press` (asserted); back/wrist → soften notes |
+| Safety copy | ✅ "Stop if you feel sharp pain." on every day (asserted) |
+| Sets progression | ✅ beginner 2 (wk1) → 3 (wk3) |
+| Reps (weight loss) | ✅ 12–15 |
+| Incomplete onboarding | ✅ defaults applied, no crash (Today + overview guard for null plan) |
+| Maps to DB tables | ✅ GeneratedPlan→workout_plans, PlanDay→workout_days(+focus enum), PlanStrengthExercise→workout_exercises |
+| No backend/Supabase/auth/AI/nutrition | ✅ |
 
 ### Loop 3 verification (maker-checker)
 | Gate | Result |
@@ -78,6 +95,16 @@
 - CHANGED `src/screens/TodayScreen.tsx` — reads store, shows "plan ready / next step" + input summary
 - CHANGED `package.json` — added `zustand`
 
+### B-04 files created / changed
+- NEW `src/data/exerciseCatalog.ts` — local catalog mirroring seed.sql (12 machines) + cardio-slug→machine map
+- NEW `src/lib/planGenerator.ts` — PURE `generatePlan(answers)`; injury safety, days/week + duration adaptation, weekly progression
+- NEW `src/state/planStore.ts` — Zustand plan store + `getPlanDay()` selector
+- CHANGED `src/types/database.ts` — added GeneratedPlan / PlanDay / PlanStrengthExercise / PlanCardioBlock
+- CHANGED `src/screens/OnboardingScreen.tsx` — on finish, generate plan + save to planStore
+- CHANGED `src/screens/TodayScreen.tsx` — render W1D1 from generated plan (guarded for null)
+- CHANGED `src/screens/WorkoutGuideScreen.tsx` — read-only workout overview from plan (logging deferred to B-05)
+- CHANGED `src/navigation/types.ts` — WorkoutGuide route params `{ week?, dayNumber? }`
+
 ### B-02 files created
 - `supabase/migrations/001_initial_schema.sql` — 15 tables, FKs, 19 indexes, RLS (15 policies), updated_at trigger
 - `supabase/seed.sql` — 12 PF beginner machines, placeholder image keys, alt_exercise_id links, idempotent
@@ -93,11 +120,11 @@
 - Screens: `src/screens/{Onboarding,Today,WorkoutGuide,Progress,Library,Settings}Screen.tsx`
 
 ## Reprioritized sequence (per D12 — auth moved late)
-Onboarding ✅ → **Plan generation (next)** → Today (real plan) → Workout guide → Set logging → *then* Auth + Supabase wiring.
+Onboarding ✅ → Plan generation ✅ → Today (real plan) ✅ → Workout overview ✅ → **Set logging (next)** → *then* Auth + Supabase wiring.
 
 ## Next task (single, after approval)
 > Per the loop rule: pick ONE item from FEATURE_BACKLOG.md, write a mini-spec, build, check, update this file, STOP.
-- **Proposed next:** Plan generation (FEATURE_BACKLOG **B-06**, called "B-04" in user's sequence) — pure function: onboarding answers → a Week-1 (or 4-week) beginner plan in local state. Injury-safe filter via `alt_exercise_id`. Imperial-first, lb loads. Still local only, no Supabase.
+- **Proposed next:** Set logging + guided machine-by-machine session (FEATURE_BACKLOG **B-09/B-10/B-11/B-12**, user's "B-05") — live workout session state (Zustand), step through each machine, log weight/reps/effort/pain per set, rest timer. Still local only, no Supabase.
 - Awaiting user go-ahead.
 
 ## Decisions log

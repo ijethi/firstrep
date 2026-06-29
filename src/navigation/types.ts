@@ -2,5 +2,5 @@
 export type RootStackParamList = {
   Onboarding: undefined;
   Main: undefined;
-  WorkoutGuide: { exerciseSlug?: string } | undefined;
+  WorkoutGuide: { week?: number; dayNumber?: number } | undefined;
 };

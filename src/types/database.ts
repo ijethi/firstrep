@@ -187,3 +187,47 @@ export interface WeeklyCheckin {
   cardio_minutes: number;
   created_at: Timestamp;
 }
+
+// ---- composed plan view types (local, B-04) ------------------------------
+// These are the nested shapes the plan generator returns and the UI renders.
+// They are NOT table rows — they map onto workout_plans / workout_days /
+// workout_exercises when a plan is persisted later (see planGenerator.ts).
+
+export interface PlanStrengthExercise {
+  exerciseId: string; // local slug-based id (maps to exercises.id later)
+  slug: string;
+  name: string;
+  imageKey: string | null; // machine image key (placeholder for now)
+  sets: number;
+  repMin: number;
+  repMax: number;
+  startingWeightGuidance: string; // beginner-friendly text, not a number
+  restSeconds: number;
+  setupNote: string;
+  formTip: string;
+}
+
+export interface PlanCardioBlock {
+  machine: CardioMachine;
+  minutes: number;
+  intensityGuidance: string;
+  beginnerNote: string;
+}
+
+export interface PlanDay {
+  weekNumber: number;
+  dayNumber: number;
+  name: string; // "Full Body A", "Cardio + Core", ...
+  focus: DayFocus; // maps to workout_days.focus (full_body | cardio | rest)
+  estimatedMinutes: number;
+  strength: PlanStrengthExercise[];
+  cardio: PlanCardioBlock | null;
+  beginnerNote: string; // always includes "Stop if you feel sharp pain."
+}
+
+export interface GeneratedPlan {
+  title: string;
+  weeks: number;
+  daysPerWeek: number;
+  days: PlanDay[]; // length = weeks * daysPerWeek
+}

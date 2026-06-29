@@ -16,6 +16,8 @@ import { colors, radius, spacing, typography } from '../theme';
 import { RootStackParamList } from '../navigation/types';
 import { useOnboardingStore } from '../state/onboardingStore';
 import type { OnboardingAnswers } from '../state/onboardingStore';
+import { usePlanStore } from '../state/planStore';
+import { generatePlan } from '../lib/planGenerator';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Onboarding'>;
 
@@ -105,6 +107,9 @@ export default function OnboardingScreen() {
   const onContinue = () => {
     if (!valid) return;
     if (isLast) {
+      // Generate the 4-week plan from answers and save it locally (B-04).
+      const plan = generatePlan(answers);
+      usePlanStore.getState().setPlan(plan);
       complete();
       navigation.replace('Main');
       return;

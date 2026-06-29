@@ -20,7 +20,7 @@
 
 ## Epic B — Onboarding & Planning (P0)
 - [x] **B-05** Onboarding quiz UI (M) — ✅ delivered in Loop 3 (user-sequence "B-03"). 11-step wizard, Zustand local store, maps to `onboarding_answers`/`user_profiles` shapes (write to DB deferred). *Success met: quiz completes, answers stored locally.*
-- [ ] **B-06** Plan generator (M) — pure function: profile → `workout_plans`+`workout_days`+`workout_exercises` (4 weeks, days/week, injury-safe filter using alt/exclusions). *Success: valid plan generated; injured area excluded.*
+- [x] **B-06** Plan generator (M) — ✅ delivered in Loop 4 (user-sequence "B-04"). PURE `generatePlan(answers)` → 4-week plan in local Zustand store; days/week + duration adaptation; injury-safe drops/softens; weekly progression. Verified via executed assertions. DB persistence deferred (no live project). *Success met.*
 
 ## Epic C — Today & Workout session (P0)
 - [ ] **B-07** Today screen (M) — today's workout card, cardio chip, habit goal, streak, Start button; rest-day + no-plan empty states. *Success: shows correct day from plan.*
