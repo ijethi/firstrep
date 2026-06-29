@@ -14,8 +14,10 @@ import { getPlanDay, usePlanStore } from '../state/planStore';
 import { useWorkoutSessionStore } from '../state/workoutSessionStore';
 import { useRecommendationStore } from '../state/recommendationStore';
 import { useProgressStore } from '../state/progressStore';
+import { usePlanProgressStore } from '../state/planProgressStore';
 import { generateRecommendations } from '../lib/trainerEngine';
 import { applyRecommendations } from '../lib/recommendationApplicator';
+import { planDayId } from '../lib/planProgress';
 
 type GuideRoute = RouteProp<RootStackParamList, 'WorkoutGuide'>;
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -80,7 +82,15 @@ export default function WorkoutGuideScreen() {
     const recs = generateRecommendations(finished, { nowISO: now, priorCompletedCount });
     useRecommendationStore.getState().setRecommendations(recs);
     if (finished) useProgressStore.getState().addSession(finished); // save to local history
-    if (status === 'completed') useRecommendationStore.getState().registerCompletion();
+    if (status === 'completed') {
+      useRecommendationStore.getState().registerCompletion();
+      // Advance the plan ONLY for completed (not abandoned) sessions.
+      if (finished) {
+        usePlanProgressStore
+          .getState()
+          .markDayCompleted(planDayId(finished.weekNumber, finished.dayNumber));
+      }
+    }
     navigation.replace('SessionSummary');
   };
 

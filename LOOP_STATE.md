@@ -7,11 +7,29 @@
 ---
 
 ## Current loop
-- **Loop #:** 8 — **B-08 Apply trainer recommendations to next workout (adaptive view layer)**
-- **Goal of this loop:** Pure `applyRecommendations(day, history, recs)` → AdaptiveDay with adjusted weight guidance + why + safety. Today + WorkoutGuide reflect it. Base plan untouched. Local-only.
-- **Success condition:** increase→+5; pain→safety + no increase; hard/reduce→same-or-lower; base plan unchanged; Today + WorkoutGuide reflect adaptive guidance; empty history keeps base; typecheck + applicator assertions pass.
+- **Loop #:** 9 — **B-09 Multi-day plan navigation + progression**
+- **Goal of this loop:** Make the 4-week plan navigable/progressive: current/next day, completed days, week strip, preview, start selected day, advance on completion. Local-only, base plan untouched.
+- **Success condition:** Today no longer fixed to W1D1; completion advances; week strip shows done/current/upcoming; preview works; Start runs selected day; adaptive recs still apply; plan-complete state works; typecheck + progression assertions pass.
 - **Ceiling:** Max 3 fix attempts. (Used: 0 — passed on first checker pass.)
-- **Status:** ✅ Complete — awaiting approval for B-09.
+- **Status:** ✅ Complete — awaiting approval for B-10.
+
+### Loop 9 verification (maker-checker — typecheck + 20 executed assertions)
+| Gate | Result |
+|------|--------|
+| `npx tsc --noEmit` | ✅ PASSED |
+| `getPlanProgress` PURE / no mutation | ✅ base plan unchanged after call (asserted) |
+| No completed → W1D1 | ✅ |
+| Completed one → next day | ✅ current=W1D2, next=W1D3 |
+| Completed a week → next week D1 | ✅ current=W2D1, currentWeek=2, week strip follows |
+| Completed all 4 weeks → complete state | ✅ isPlanComplete; Today shows completion banner + repeat/new-plan |
+| Preview another day | ✅ selection honored; current stays recommended; preview copy shown |
+| Start uses selected day (not W1D1) | ✅ `startSession(selectedDay)` → WorkoutGuide {week,dayNumber} |
+| Completion advances; abandoned does NOT | ✅ markDayCompleted only in `status==='completed'` branch |
+| Adaptive recs apply to selected day | ✅ WorkoutGuide applies to started day |
+| Summary shows completed + next workout | ✅ |
+| No plan / unknown ids | ✅ no crash; unknown ids ignored |
+| Maps to DB | ✅ completedDayIds→workout_days; sessions→workout_sessions |
+| No backend/Supabase/auth/AI/nutrition/analytics/wearable/Library/Settings | ✅ |
 
 ### Loop 8 verification (maker-checker — typecheck + 11 executed assertions)
 | Gate | Result |
@@ -210,6 +228,16 @@
 - CHANGED `src/screens/TodayScreen.tsx` — per-exercise adaptive hint line
 - NOTE: planStore + planGenerator UNCHANGED (adaptation is a view layer, per requirement 9)
 
+### B-09 files created / changed
+- NEW `src/lib/planProgress.ts` — PURE `getPlanProgress()` + `planDayId`/`dayIdOf`
+- NEW `src/state/planProgressStore.ts` — completedDayIds / selectedDayId / markDayCompleted / selectDay / reset
+- NEW `src/components/WeekPlanStrip.tsx` — week strip (done/current/preview)
+- NEW `docs/PLAN_PROGRESSION_REVIEW.md`
+- CHANGED `src/screens/TodayScreen.tsx` — week strip, selected-day card, preview note, plan-complete banner, start selected day
+- CHANGED `src/screens/WorkoutGuideScreen.tsx` — mark day complete on completed finish (not abandoned)
+- CHANGED `src/screens/SessionSummaryScreen.tsx` — completed + next workout block
+- NOTE: planStore + planGenerator UNCHANGED (progression tracked separately as completed-id set)
+
 ### B-02 files created
 - `supabase/migrations/001_initial_schema.sql` — 15 tables, FKs, 19 indexes, RLS (15 policies), updated_at trigger
 - `supabase/seed.sql` — 12 PF beginner machines, placeholder image keys, alt_exercise_id links, idempotent
@@ -225,14 +253,14 @@
 - Screens: `src/screens/{Onboarding,Today,WorkoutGuide,Progress,Library,Settings}Screen.tsx`
 
 ## Reprioritized sequence (per D12 — auth moved late)
-Onboarding ✅ → Plan generation ✅ → Today ✅ → Workout overview ✅ → Guided session + set logging ✅ → Trainer recommendations ✅ → Progress dashboard ✅ → Adaptive next-workout ✅ → **next: B-09 (TBD)** → *then* Auth + Supabase persistence.
+Onboarding ✅ → Plan generation ✅ → Today ✅ → Workout overview ✅ → Guided session + set logging ✅ → Trainer recommendations ✅ → Progress dashboard ✅ → Adaptive next-workout ✅ → Multi-day navigation/progression ✅ → **next: B-10 (TBD)** → *then* Auth + Supabase persistence.
 
-## Next task (single, after approval) — user to choose B-09
+## Next task (single, after approval) — user to choose B-10
 > Per the loop rule: pick ONE item from FEATURE_BACKLOG.md, write a mini-spec, build, check, update this file, STOP.
-- **Candidate A:** Remaining local screens — Exercise Library (B-21), Settings/profile (B-22), Weekly check-in (B-20).
-- **Candidate B:** Multi-day plan navigation (Today shows the correct day across the week; week advance on consistency), so adaptive recs key per day.
-- **Candidate C:** Begin Auth + Supabase persistence (deferred D12) — first real backend wiring + offline-tolerant logging.
-- Awaiting user direction on B-09 scope.
+- **Candidate A:** Local persistence (AsyncStorage) — make onboarding/plan/progress/history survive app reload, so the multi-day progression actually sticks between sessions (still no Supabase).
+- **Candidate B:** Remaining local screens — Exercise Library (B-21), Settings/profile (B-22), Weekly check-in (B-20).
+- **Candidate C:** Begin Auth + Supabase persistence (deferred D12) — first real backend wiring.
+- Awaiting user direction on B-10 scope.
 
 ## Decisions log
 | # | Decision | Rationale | Date |

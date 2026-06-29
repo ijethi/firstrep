@@ -23,6 +23,7 @@
 - [x] **B-06** Plan generator (M) — ✅ delivered in Loop 4 (user-sequence "B-04"). PURE `generatePlan(answers)` → 4-week plan in local Zustand store; days/week + duration adaptation; injury-safe drops/softens; weekly progression. Verified via executed assertions. DB persistence deferred (no live project). *Success met.*
 
 ## Epic C — Today & Workout session (P0)
+- [x] **B-09** Multi-day plan navigation + progression (user-sequence "B-09") — ✅ Loop 9. Pure `getPlanProgress`, planProgressStore, WeekPlanStrip; current/next/selected day, preview, start selected day, advance on completion (not abandon), plan-complete state. 20 assertions pass.
 - [ ] **B-07** Today screen (M) — today's workout card, cardio chip, habit goal, streak, Start button; rest-day + no-plan empty states. *Success: shows correct day from plan.*
 - [ ] **B-08** Workout overview screen (S) — ordered exercise list + Start. *Success: lists day's exercises, Start enters guide.*
 - [x] **B-09** Machine guide screen (M) — ✅ Loop 5. ExerciseStepCard: image placeholder, plain description, setup, sets/reps, weight guidance, form tip, safety note; progress indicator.

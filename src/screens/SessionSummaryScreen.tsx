@@ -9,6 +9,9 @@ import { colors, radius, spacing, typography } from '../theme';
 import { RootStackParamList } from '../navigation/types';
 import { useWorkoutSessionStore } from '../state/workoutSessionStore';
 import { useRecommendationStore } from '../state/recommendationStore';
+import { usePlanStore } from '../state/planStore';
+import { usePlanProgressStore } from '../state/planProgressStore';
+import { getPlanProgress } from '../lib/planProgress';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -16,6 +19,11 @@ export default function SessionSummaryScreen() {
   const navigation = useNavigation<Nav>();
   const session = useWorkoutSessionStore((s) => s.session);
   const recommendations = useRecommendationStore((s) => s.recommendations);
+  const plan = usePlanStore((s) => s.plan);
+  const completedDayIds = usePlanProgressStore((s) => s.completedDayIds);
+
+  // Next workout = the recommended (current) day after this session was marked complete.
+  const progress = getPlanProgress(plan, completedDayIds, null);
 
   if (!session) {
     return (
@@ -32,12 +40,29 @@ export default function SessionSummaryScreen() {
   const painCount = session.exercises.filter((ex) => ex.painReported).length;
   const cardioMin = session.cardio && !session.cardio.skipped ? session.cardio.completedMinutes ?? 0 : 0;
 
+  const nextDay = progress.currentDay;
+
   return (
     <ScreenContainer scroll>
       <Text style={typography.h1}>Great work! 🎉</Text>
       <Text style={[typography.body, styles.muted]}>
-        {session.dayName} · You showed up — that&apos;s what counts.
+        You finished {session.dayName}. You showed up — that&apos;s what counts.
       </Text>
+
+      {progress.isPlanComplete || nextDay ? (
+        <View style={styles.nextCard}>
+          {progress.isPlanComplete ? (
+            <Text style={styles.nextText}>
+              🏁 You completed your beginner plan! Repeat the last week or generate a new plan from
+              Today.
+            </Text>
+          ) : nextDay ? (
+            <Text style={styles.nextText}>
+              ⏭️ Next up: {nextDay.name} (Week {nextDay.weekNumber} · Day {nextDay.dayNumber})
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
 
       <View style={styles.statsRow}>
         <Stat value={String(totalSets)} label="sets logged" />
@@ -101,6 +126,12 @@ function Stat({ value, label }: { value: string; label: string }) {
 
 const styles = StyleSheet.create({
   muted: { color: colors.textMuted },
+  nextCard: {
+    backgroundColor: '#E8F3F0',
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+  },
+  nextText: { ...typography.body, color: colors.primary, fontWeight: '600' },
   statsRow: { flexDirection: 'row', gap: spacing.md },
   stat: {
     flex: 1,
