@@ -1,6 +1,9 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 import type { BodyWeightEntry, WorkoutSessionLocal } from '../types/database';
+import { appJSONStorage } from '../lib/storage';
+import { migratePersisted, PERSIST_VERSION, STORAGE_KEYS } from '../lib/persistConfig';
 
 /**
  * Progress / history store (B-07) — LOCAL ONLY, no persistence yet.
@@ -16,13 +19,24 @@ interface ProgressState {
   clear: () => void;
 }
 
-export const useProgressStore = create<ProgressState>((set) => ({
-  history: [],
-  bodyWeights: [],
-  addSession: (session) => set((s) => ({ history: [...s.history, session] })),
-  addBodyWeight: (weightKg, loggedOnISO) =>
-    set((s) => ({
-      bodyWeights: [...s.bodyWeights, { weightKg, loggedOnISO, source: 'manual' }],
-    })),
-  clear: () => set({ history: [], bodyWeights: [] }),
-}));
+export const useProgressStore = create<ProgressState>()(
+  persist(
+    (set) => ({
+      history: [],
+      bodyWeights: [],
+      addSession: (session) => set((s) => ({ history: [...s.history, session] })),
+      addBodyWeight: (weightKg, loggedOnISO) =>
+        set((s) => ({
+          bodyWeights: [...s.bodyWeights, { weightKg, loggedOnISO, source: 'manual' }],
+        })),
+      clear: () => set({ history: [], bodyWeights: [] }),
+    }),
+    {
+      name: STORAGE_KEYS.progress,
+      storage: appJSONStorage,
+      version: PERSIST_VERSION,
+      migrate: (s, v) => migratePersisted(s, v),
+      partialize: (s) => ({ history: s.history, bodyWeights: s.bodyWeights }),
+    },
+  ),
+);

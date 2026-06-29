@@ -1,7 +1,10 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 import { lbToKg } from '../lib/units';
 import type { UnitSystem } from '../lib/units';
+import { appJSONStorage } from '../lib/storage';
+import { migratePersisted, PERSIST_VERSION, STORAGE_KEYS } from '../lib/persistConfig';
 
 /**
  * Onboarding store (B-03) — LOCAL STATE ONLY. No Supabase, no auth, no persistence.
@@ -54,14 +57,24 @@ interface OnboardingState {
   reset: () => void;
 }
 
-export const useOnboardingStore = create<OnboardingState>((set) => ({
-  answers: { ...EMPTY },
-  completed: false,
-  setAnswer: (key, value) =>
-    set((s) => ({ answers: { ...s.answers, [key]: value } })),
-  complete: () => set({ completed: true }),
-  reset: () => set({ answers: { ...EMPTY }, completed: false }),
-}));
+export const useOnboardingStore = create<OnboardingState>()(
+  persist(
+    (set) => ({
+      answers: { ...EMPTY },
+      completed: false,
+      setAnswer: (key, value) => set((s) => ({ answers: { ...s.answers, [key]: value } })),
+      complete: () => set({ completed: true }),
+      reset: () => set({ answers: { ...EMPTY }, completed: false }),
+    }),
+    {
+      name: STORAGE_KEYS.onboarding,
+      storage: appJSONStorage,
+      version: PERSIST_VERSION,
+      migrate: (s, v) => migratePersisted(s, v),
+      partialize: (s) => ({ answers: s.answers, completed: s.completed }),
+    },
+  ),
+);
 
 // --------------------------------------------------------------------------
 // Helpers

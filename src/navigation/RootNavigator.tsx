@@ -13,6 +13,7 @@ import LibraryScreen from '../screens/LibraryScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import WorkoutGuideScreen from '../screens/WorkoutGuideScreen';
 import SessionSummaryScreen from '../screens/SessionSummaryScreen';
+import { useOnboardingStore } from '../state/onboardingStore';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -56,9 +57,12 @@ function MainTabs() {
 }
 
 export default function RootNavigator() {
+  // Rendered only after hydration (see App), so this reflects persisted state:
+  // skip onboarding straight to Today when it was already completed.
+  const onboardingComplete = useOnboardingStore((s) => s.completed);
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Onboarding">
+      <Stack.Navigator initialRouteName={onboardingComplete ? 'Main' : 'Onboarding'}>
         <Stack.Screen
           name="Onboarding"
           component={OnboardingScreen}

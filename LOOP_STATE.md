@@ -7,11 +7,26 @@
 ---
 
 ## Current loop
-- **Loop #:** 9 — **B-09 Multi-day plan navigation + progression**
-- **Goal of this loop:** Make the 4-week plan navigable/progressive: current/next day, completed days, week strip, preview, start selected day, advance on completion. Local-only, base plan untouched.
-- **Success condition:** Today no longer fixed to W1D1; completion advances; week strip shows done/current/upcoming; preview works; Start runs selected day; adaptive recs still apply; plan-complete state works; typecheck + progression assertions pass.
+- **Loop #:** 10 — **B-10 Local persistence (AsyncStorage + Zustand persist)**
+- **Goal of this loop:** Persist onboarding/plan/progress/history/body-weights/recommendations across reloads; gate hydration (no onboarding flicker); reset utility. Live session NOT persisted. Local only.
+- **Success condition:** Data survives reload; onboarding skipped after completion; Today shows correct next workout; history/weights/recs persist; live session not restored broken; typecheck + persistence assertions pass.
 - **Ceiling:** Max 3 fix attempts. (Used: 0 — passed on first checker pass.)
-- **Status:** ✅ Complete — awaiting approval for B-10.
+- **Status:** ✅ Complete — awaiting approval for B-11.
+
+### Loop 10 verification (maker-checker — typecheck + 11 executed assertions)
+| Gate | Result |
+|------|--------|
+| `npx expo install async-storage` | ✅ 1.23.1 (Expo-pinned) |
+| `npx tsc --noEmit` | ✅ PASSED |
+| 5 stores persisted (partialize = data only) | ✅ onboarding/plan/planProgress/progress/recommendation |
+| Live session NOT persisted | ✅ workoutSessionStore unchanged; WorkoutGuide guards null |
+| Version + migration | ✅ version 1; `migratePersisted` identity (asserted) |
+| Hydration gate (no flicker) | ✅ `useAppHydrated` waits for all; App shows LoadingScreen; RootNavigator initialRoute from persisted `completed` |
+| Reset works | ✅ `resetLocalAppData` clears keys + resets stores; Settings button + confirm |
+| JSON-safe snapshots | ✅ all 5 round-trip through JSON (asserted) |
+| Maps to Supabase | ✅ same view models as earlier loops |
+| Base plan not mutated | ✅ unaffected |
+| No backend/Supabase/auth/AI/nutrition/analytics/wearable | ✅ |
 
 ### Loop 9 verification (maker-checker — typecheck + 20 executed assertions)
 | Gate | Result |
@@ -238,6 +253,18 @@
 - CHANGED `src/screens/SessionSummaryScreen.tsx` — completed + next workout block
 - NOTE: planStore + planGenerator UNCHANGED (progression tracked separately as completed-id set)
 
+### B-10 files created / changed
+- NEW `src/lib/persistConfig.ts` — PURE keys/version/migrate/pickKeys
+- NEW `src/lib/storage.ts` — AsyncStorage JSON adapter + clearPersistedStorage
+- NEW `src/lib/useHydration.ts` — `useAppHydrated()` gate
+- NEW `src/lib/resetAppData.ts` — `resetLocalAppData()`
+- NEW `docs/LOCAL_PERSISTENCE_REVIEW.md`
+- CHANGED stores wrapped with `persist`: onboarding, plan, planProgress, progress, recommendation (workoutSession NOT persisted)
+- CHANGED `src/App.tsx` — hydration gate + LoadingScreen
+- CHANGED `src/navigation/RootNavigator.tsx` — initialRoute from persisted `completed`
+- CHANGED `src/screens/SettingsScreen.tsx` — "Reset local data" button + confirm
+- CHANGED `package.json` — added `@react-native-async-storage/async-storage`
+
 ### B-02 files created
 - `supabase/migrations/001_initial_schema.sql` — 15 tables, FKs, 19 indexes, RLS (15 policies), updated_at trigger
 - `supabase/seed.sql` — 12 PF beginner machines, placeholder image keys, alt_exercise_id links, idempotent
@@ -253,14 +280,15 @@
 - Screens: `src/screens/{Onboarding,Today,WorkoutGuide,Progress,Library,Settings}Screen.tsx`
 
 ## Reprioritized sequence (per D12 — auth moved late)
-Onboarding ✅ → Plan generation ✅ → Today ✅ → Workout overview ✅ → Guided session + set logging ✅ → Trainer recommendations ✅ → Progress dashboard ✅ → Adaptive next-workout ✅ → Multi-day navigation/progression ✅ → **next: B-10 (TBD)** → *then* Auth + Supabase persistence.
+Onboarding ✅ → Plan generation ✅ → Today ✅ → Workout overview ✅ → Guided session + set logging ✅ → Trainer recommendations ✅ → Progress dashboard ✅ → Adaptive next-workout ✅ → Multi-day navigation/progression ✅ → Local persistence ✅ → **next: B-11 (TBD)** → *then* Auth + Supabase sync.
 
-## Next task (single, after approval) — user to choose B-10
+## Next task (single, after approval) — user to choose B-11
 > Per the loop rule: pick ONE item from FEATURE_BACKLOG.md, write a mini-spec, build, check, update this file, STOP.
-- **Candidate A:** Local persistence (AsyncStorage) — make onboarding/plan/progress/history survive app reload, so the multi-day progression actually sticks between sessions (still no Supabase).
-- **Candidate B:** Remaining local screens — Exercise Library (B-21), Settings/profile (B-22), Weekly check-in (B-20).
-- **Candidate C:** Begin Auth + Supabase persistence (deferred D12) — first real backend wiring.
-- Awaiting user direction on B-10 scope.
+- **Candidate A:** Exercise Library screen (B-21) — browse all machines (read-only) from the catalog, search/filter, detail view. Local only.
+- **Candidate B:** Weekly check-in flow (B-20) — weight/energy/soreness entry + week summary (local).
+- **Candidate C:** Settings/profile build-out (B-22) — edit profile, update injuries → regenerate safe plan, restart plan, unit toggle.
+- **Candidate D:** Begin Auth + Supabase sync (deferred D12) — first real backend wiring.
+- Awaiting user direction on B-11 scope.
 
 ## Decisions log
 | # | Decision | Rationale | Date |

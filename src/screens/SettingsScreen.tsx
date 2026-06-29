@@ -1,13 +1,38 @@
 import React from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { Alert, StyleSheet, Text } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { AppButton, ScreenContainer } from '../components';
 import { colors, typography } from '../theme';
 import { defaultUnitSystem } from '../lib/units';
+import { resetLocalAppData } from '../lib/resetAppData';
+import { RootStackParamList } from '../navigation/types';
+
+type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export default function SettingsScreen() {
+  const navigation = useNavigation<Nav>();
   const unitLabel =
     defaultUnitSystem === 'imperial' ? 'lb / in (imperial)' : 'kg / cm (metric)';
+
+  const onReset = () => {
+    Alert.alert(
+      'Reset local data?',
+      'This clears your onboarding, plan, progress, and logs on this device. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            await resetLocalAppData();
+            navigation.reset({ index: 0, routes: [{ name: 'Onboarding' }] });
+          },
+        },
+      ],
+    );
+  };
 
   return (
     <ScreenContainer scroll>
@@ -20,6 +45,7 @@ export default function SettingsScreen() {
       <Text style={typography.body}>Units: {unitLabel}</Text>
 
       <AppButton label="Restart plan" variant="secondary" onPress={() => {}} />
+      <AppButton label="Reset local data" variant="secondary" onPress={onReset} />
       <AppButton label="Sign out" variant="ghost" onPress={() => {}} />
     </ScreenContainer>
   );
