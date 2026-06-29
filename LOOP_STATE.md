@@ -7,11 +7,28 @@
 ---
 
 ## Current loop
-- **Loop #:** 5 — **B-05 Guided machine-by-machine session + set logging + rest timer**
-- **Goal of this loop:** Live workout session for W1D1: step through exercises, log sets (weight/reps/effort/pain), rest timer, cardio logging, pain-safe continue, session summary. Local-only.
-- **Success condition:** Start from Today; one exercise at a time; log sets; rest timer; cardio log; pain stops exercise (not workout); complete → summary; typecheck clean.
+- **Loop #:** 6 — **B-06 Local rule-based trainer engine (R1–R7)**
+- **Goal of this loop:** Pure `generateRecommendations(session, opts)` → beginner recommendations shown on the session summary. Local-only.
+- **Success condition:** Completing a session generates local recs; summary shows cards; pain = highest priority; recs map to `trainer_recommendations`; typecheck + engine assertions pass.
 - **Ceiling:** Max 3 fix attempts. (Used: 0 — passed on first checker pass.)
-- **Status:** ✅ Complete — awaiting approval for B-06 (trainer progression).
+- **Status:** ✅ Complete — awaiting approval for B-07.
+
+### Loop 6 verification (maker-checker — typecheck + 15 executed assertions)
+| Gate | Result |
+|------|--------|
+| `npx tsc --noEmit` | ✅ PASSED |
+| Engine is PURE | ✅ no Date/random/IO; identical output for identical input (asserted) |
+| R1 pain override | ✅ pain → pain_safety, beats progression, sorted FIRST (priority 'safety') |
+| R2 increase | ✅ all sets + top reps + easy/good → +5 lb |
+| R3 repeat / R4 reduce | ✅ one-hard → repeat; multi-hard/low-reps → reduce (priority 'high') |
+| R5 skipped | ✅ skipped or zero sets → skip_repeat (lighter setup) |
+| R6 cardio | ✅ below→repeat, met@easy/mod→+2–5min, hard→keep |
+| R7 consistency | ✅ first completed → congratulate "consistency, not perfection"; accepts history seed |
+| Empty/null session | ✅ null→[]; empty→R7 only (no crash) |
+| Output → trainer_recommendations | ✅ ruleId/type/exerciseId/title/message/nextAction/priority/generatedAt/source='rule_based' |
+| Summary shows rec cards | ✅ `TrainerRecommendationCard`, sorted, pain accent red |
+| Beginner-friendly copy | ✅ coaching tone, no jargon |
+| No backend/Supabase/auth/AI/nutrition/dashboard | ✅ |
 
 ### Loop 5 verification (maker-checker — typecheck + executed assertions)
 | Gate | Result |
@@ -131,6 +148,15 @@
 - CHANGED `src/screens/TodayScreen.tsx` — "Start Workout" starts session + navigates
 - CHANGED `src/navigation/{types.ts,RootNavigator.tsx}` — added SessionSummary route
 
+### B-06 files created / changed
+- NEW `src/lib/trainerEngine.ts` — PURE `generateRecommendations()`; R1–R7, priority sort, pain override
+- NEW `src/state/recommendationStore.ts` — recs + local `completedCount` (R7 history seed)
+- NEW `src/components/TrainerRecommendationCard.tsx` — priority-accented coaching card
+- NEW `docs/TRAINER_ENGINE_REVIEW.md` — rules, priority, pain override, DB mapping, tests
+- CHANGED `src/types/database.ts` — TrainerRec / RecommendationType / RecommendationPriority
+- CHANGED `src/screens/WorkoutGuideScreen.tsx` — on finish, run engine + save recs (completed increments count)
+- CHANGED `src/screens/SessionSummaryScreen.tsx` — "Your next steps" rec cards
+
 ### B-02 files created
 - `supabase/migrations/001_initial_schema.sql` — 15 tables, FKs, 19 indexes, RLS (15 policies), updated_at trigger
 - `supabase/seed.sql` — 12 PF beginner machines, placeholder image keys, alt_exercise_id links, idempotent
@@ -146,12 +172,14 @@
 - Screens: `src/screens/{Onboarding,Today,WorkoutGuide,Progress,Library,Settings}Screen.tsx`
 
 ## Reprioritized sequence (per D12 — auth moved late)
-Onboarding ✅ → Plan generation ✅ → Today (real plan) ✅ → Workout overview ✅ → Guided session + set logging ✅ → **Trainer progression / recommendations (next)** → *then* Auth + Supabase wiring.
+Onboarding ✅ → Plan generation ✅ → Today (real plan) ✅ → Workout overview ✅ → Guided session + set logging ✅ → Trainer recommendations ✅ → **next: Progress dashboard OR plan-progression apply OR Auth/Supabase** → *then* remaining P1.
 
-## Next task (single, after approval)
+## Next task (single, after approval) — user to choose
 > Per the loop rule: pick ONE item from FEATURE_BACKLOG.md, write a mini-spec, build, check, update this file, STOP.
-- **Proposed next:** Trainer logic engine (FEATURE_BACKLOG **B-14/B-15**, user's "B-06") — pure rule engine R1–R7 consuming a completed `WorkoutSessionLocal` → `TrainerRecommendation[]` (increase/keep/reduce weight, pain→swap, etc.). Table-driven tests. Still local-only.
-- Awaiting user go-ahead.
+- **Candidate A (B-07, suggested):** Progress dashboard (B-18) — weight trend, streak, cardio minutes, strength PRs from local stores. (Still local; no nutrition.)
+- **Candidate B:** Apply recommendations to next session (feed R2/R4 weight deltas into `suggested_weight_lb` so the next workout pre-fills adjusted weights).
+- **Candidate C:** Begin Auth + Supabase wiring (persistence) — the deferred D12 work.
+- Awaiting user direction on B-07 scope.
 
 ## Decisions log
 | # | Decision | Rationale | Date |

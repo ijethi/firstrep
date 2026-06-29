@@ -32,8 +32,8 @@
 - [x] **B-13** Session summary (S) — ✅ Loop 5 `SessionSummaryScreen`: sets/cardio/skipped recap + complete. (Streak/unlock = later analytics loop.)
 
 ## Epic D — Trainer logic (P0)
-- [ ] **B-14** Rule engine R1–R4 (M) — per-exercise recommendations + tests; writes `trainer_recommendations`; updates `suggested_weight_lb`. *Success: table-driven tests pass; pain overrides.*
-- [ ] **B-15** Rule engine R5–R7 (M) — restart-easier, nutrition-review, congratulate-unlock + tests. *Success: tests pass; week unlock works.*
+- [x] **B-14** Rule engine (M) — ✅ Loop 6 (user-sequence "B-06"). PURE `generateRecommendations()`: R1 pain override, R2 increase, R3 repeat, R4 reduce, per-exercise + priority sort. 15 executed assertions pass. (DB write of `trainer_recommendations` / `suggested_weight_lb` update deferred to persistence/apply loop.)
+- [x] **B-15** Rule engine cardio + consistency (M) — ✅ Loop 6. R5 skip-repeat, R6 cardio progression, R7 consistency (history-seed ready). (Restart-easier R5-missed-days + week unlock = later loop with streak/history.)
 
 ## Epic E — Cardio & Progress (P1)
 - [ ] **B-16** Cardio tracking screen (S) — machine picker, timer/manual, writes `cardio_logs`. *Success: logs minutes, adds to weekly total.*

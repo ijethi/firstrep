@@ -4,15 +4,18 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { AppButton, ScreenContainer } from '../components';
+import TrainerRecommendationCard from '../components/TrainerRecommendationCard';
 import { colors, radius, spacing, typography } from '../theme';
 import { RootStackParamList } from '../navigation/types';
 import { useWorkoutSessionStore } from '../state/workoutSessionStore';
+import { useRecommendationStore } from '../state/recommendationStore';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export default function SessionSummaryScreen() {
   const navigation = useNavigation<Nav>();
   const session = useWorkoutSessionStore((s) => s.session);
+  const recommendations = useRecommendationStore((s) => s.recommendations);
 
   if (!session) {
     return (
@@ -73,6 +76,15 @@ export default function SessionSummaryScreen() {
         </Text>
       ) : null}
 
+      {recommendations.length > 0 ? (
+        <View style={styles.recsSection}>
+          <Text style={typography.h2}>Your next steps</Text>
+          {recommendations.map((rec, i) => (
+            <TrainerRecommendationCard key={`${rec.ruleId}-${rec.exerciseId ?? 'x'}-${i}`} rec={rec} />
+          ))}
+        </View>
+      ) : null}
+
       <AppButton label="Back to Today" onPress={() => navigation.navigate('Main')} />
     </ScreenContainer>
   );
@@ -110,4 +122,5 @@ const styles = StyleSheet.create({
   exName: { ...typography.body, color: colors.text, flex: 1 },
   exMeta: { ...typography.body, color: colors.textMuted },
   painNote: { color: colors.danger },
+  recsSection: { gap: spacing.sm },
 });

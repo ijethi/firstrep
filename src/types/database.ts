@@ -281,3 +281,32 @@ export interface WorkoutSessionLocal {
   exercises: ExerciseLog[];
   cardio: CardioSessionLog | null;
 }
+
+// ---- trainer recommendation output (local, B-06) -------------------------
+// Pure output of the rule engine. Maps to the `trainer_recommendations` table:
+//   ruleId→rule_id, type→action.type, exerciseId→context_id, message→message,
+//   source 'rule_based'→ DB source 'rule_engine'. priority/title/nextAction are
+//   UI-facing and would ride along in `action` jsonb when persisted.
+
+export type RecommendationType =
+  | 'increase_weight'
+  | 'repeat_weight'
+  | 'reduce_weight'
+  | 'pain_safety'
+  | 'skip_repeat'
+  | 'cardio_progress'
+  | 'consistency';
+
+export type RecommendationPriority = 'safety' | 'high' | 'medium' | 'low';
+
+export interface TrainerRec {
+  ruleId: string; // 'R1'..'R7'
+  type: RecommendationType;
+  exerciseId: string | null;
+  title: string;
+  message: string;
+  nextAction: string;
+  priority: RecommendationPriority;
+  generatedAtISO: string;
+  source: 'rule_based';
+}

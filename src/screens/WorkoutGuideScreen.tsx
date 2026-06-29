@@ -12,6 +12,8 @@ import { colors, radius, spacing, typography } from '../theme';
 import { RootStackParamList } from '../navigation/types';
 import { getPlanDay, usePlanStore } from '../state/planStore';
 import { useWorkoutSessionStore } from '../state/workoutSessionStore';
+import { useRecommendationStore } from '../state/recommendationStore';
+import { generateRecommendations } from '../lib/trainerEngine';
 
 type GuideRoute = RouteProp<RootStackParamList, 'WorkoutGuide'>;
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -64,24 +66,26 @@ export default function WorkoutGuideScreen() {
   const totalSteps = strengthCount + (hasCardio ? 1 : 0);
   const onCardioStep = hasCardio && step === strengthCount;
 
+  // Finish: stamp the session, run the (pure) trainer engine, save recs, go to summary.
+  const finishAndSummarize = (status: 'completed' | 'abandoned') => {
+    const now = new Date().toISOString();
+    const priorCompletedCount = useRecommendationStore.getState().completedCount;
+    finish(status, now);
+    const finished = useWorkoutSessionStore.getState().session;
+    const recs = generateRecommendations(finished, { nowISO: now, priorCompletedCount });
+    useRecommendationStore.getState().setRecommendations(recs);
+    if (status === 'completed') useRecommendationStore.getState().registerCompletion();
+    navigation.replace('SessionSummary');
+  };
+
   const endEarly = () => {
     Alert.alert('End workout?', 'Your logged sets will be saved.', [
       { text: 'Keep going', style: 'cancel' },
-      {
-        text: 'End workout',
-        style: 'destructive',
-        onPress: () => {
-          finish('abandoned', new Date().toISOString());
-          navigation.replace('SessionSummary');
-        },
-      },
+      { text: 'End workout', style: 'destructive', onPress: () => finishAndSummarize('abandoned') },
     ]);
   };
 
-  const goToSummary = () => {
-    finish('completed', new Date().toISOString());
-    navigation.replace('SessionSummary');
-  };
+  const goToSummary = () => finishAndSummarize('completed');
 
   // ---- Cardio step ----
   if (onCardioStep && session.cardio && planDay.cardio) {
