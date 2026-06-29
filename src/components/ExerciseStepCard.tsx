@@ -8,12 +8,22 @@ interface Props {
   exercise: PlanStrengthExercise;
   exerciseIndex: number; // 0-based
   totalExercises: number;
+  /** Adaptive "Why this suggestion?" copy from the recommendation applicator. */
+  why?: string | null;
+  /** Adaptive pain/safety warning from the recommendation applicator. */
+  safety?: string | null;
 }
 
 const SAFETY = 'Stop if you feel sharp pain.';
 
 /** Presentational card showing everything a beginner needs at the machine. */
-export default function ExerciseStepCard({ exercise, exerciseIndex, totalExercises }: Props) {
+export default function ExerciseStepCard({
+  exercise,
+  exerciseIndex,
+  totalExercises,
+  why,
+  safety,
+}: Props) {
   return (
     <View style={styles.wrap}>
       <Text style={styles.progress}>
@@ -38,6 +48,17 @@ export default function ExerciseStepCard({ exercise, exerciseIndex, totalExercis
 
       <Text style={styles.label}>Weight</Text>
       <Text style={styles.text}>{exercise.startingWeightGuidance}</Text>
+      {why ? (
+        <View style={styles.whyBox}>
+          <Text style={styles.whyText}>💡 Why this suggestion? {why}</Text>
+        </View>
+      ) : null}
+
+      {safety ? (
+        <View style={styles.painBox}>
+          <Text style={styles.painText}>⚠️ {safety}</Text>
+        </View>
+      ) : null}
 
       <View style={styles.safety}>
         <Text style={styles.safetyText}>⚠️ {SAFETY}</Text>
@@ -69,4 +90,18 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   safetyText: { ...typography.body, color: colors.danger, fontWeight: '600' },
+  whyBox: {
+    marginTop: spacing.xs,
+    backgroundColor: '#E8F3F0',
+    borderRadius: radius.md,
+    padding: spacing.md,
+  },
+  whyText: { ...typography.body, color: colors.primary },
+  painBox: {
+    marginTop: spacing.xs,
+    backgroundColor: '#FCECE3',
+    borderRadius: radius.md,
+    padding: spacing.md,
+  },
+  painText: { ...typography.body, color: colors.danger, fontWeight: '600' },
 });

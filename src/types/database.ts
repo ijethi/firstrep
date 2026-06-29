@@ -320,3 +320,20 @@ export interface BodyWeightEntry {
   loggedOnISO: string; // ISO timestamp; date portion = logged_on
   source: 'manual';
 }
+
+// ---- adaptive plan view types (B-08) -------------------------------------
+// A VIEW layer over a PlanDay: the base plan is never mutated. Applies trainer
+// recommendations + last-used weights to produce adaptive suggestions for the
+// NEXT session. Maps to workout_exercises.suggested_weight_lb when persisted.
+
+export interface AdaptiveExercise extends PlanStrengthExercise {
+  adaptiveWeightLb: number | null; // suggested weight for next time (null = no data)
+  whyExplanation: string | null; // "Last time this felt comfortable. Try 5 lb more today."
+  safetyWarning: string | null; // set for pain_safety
+  adapted: boolean; // true if a recommendation changed the base guidance
+  recommendationType: RecommendationType | null;
+}
+
+export interface AdaptiveDay extends Omit<PlanDay, 'strength'> {
+  strength: AdaptiveExercise[];
+}

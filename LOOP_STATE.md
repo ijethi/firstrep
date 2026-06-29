@@ -7,11 +7,28 @@
 ---
 
 ## Current loop
-- **Loop #:** 7 — **B-07 Local Progress dashboard**
-- **Goal of this loop:** Save finished sessions to local history; Progress screen shows workouts/streak/sets/cardio/exercises, recent tips, strength + cardio cards, body-weight logging. Local-only.
-- **Success condition:** Completing a workout saves to history; Progress shows counts/cardio/strength; weight logging works; empty states don't crash; typecheck + stats assertions pass.
-- **Ceiling:** Max 3 fix attempts. (Used: 0 code fixes — one faulty test regex corrected, code unchanged.)
-- **Status:** ✅ Complete — awaiting approval for B-08.
+- **Loop #:** 8 — **B-08 Apply trainer recommendations to next workout (adaptive view layer)**
+- **Goal of this loop:** Pure `applyRecommendations(day, history, recs)` → AdaptiveDay with adjusted weight guidance + why + safety. Today + WorkoutGuide reflect it. Base plan untouched. Local-only.
+- **Success condition:** increase→+5; pain→safety + no increase; hard/reduce→same-or-lower; base plan unchanged; Today + WorkoutGuide reflect adaptive guidance; empty history keeps base; typecheck + applicator assertions pass.
+- **Ceiling:** Max 3 fix attempts. (Used: 0 — passed on first checker pass.)
+- **Status:** ✅ Complete — awaiting approval for B-09.
+
+### Loop 8 verification (maker-checker — typecheck + 11 executed assertions)
+| Gate | Result |
+|------|--------|
+| `npx tsc --noEmit` | ✅ PASSED |
+| Applicator is PURE / view-layer | ✅ returns NEW AdaptiveDay; base day + planStore untouched (asserted) |
+| increase_weight → +5 lb | ✅ 30→35 with "5 lb more" copy |
+| pain_safety → no increase + warning | ✅ stays at last weight; safety warning shown |
+| **pain priority** | ✅ pain wins even if increase rec also present (asserted) |
+| reduce_weight → −5 lb + floor | ✅ 30→25; floors at safe min 10 |
+| repeat_weight / skip_repeat | ✅ same weight / lighter practice framing |
+| Empty history / null day | ✅ base guidance kept; null→null (no crash) |
+| increase w/o prior weight | ✅ keeps base guidance (safe) |
+| Today reflects adaptive hint | ✅ per-exercise hint line |
+| WorkoutGuide reflects adaptive | ✅ ExerciseStepCard why+safety; SetLogger pre-fills suggested weight |
+| Maps to DB | ✅ adaptiveWeightLb→workout_exercises.suggested_weight_lb; why/safety→trainer_recommendations.action |
+| No backend/Supabase/auth/AI/nutrition/analytics/wearable | ✅ |
 
 ### Loop 7 verification (maker-checker — typecheck + executed assertions)
 | Gate | Result |
@@ -184,6 +201,15 @@
 - CHANGED `src/types/database.ts` — BodyWeightEntry
 - REUSED existing `ProgressCard` for stat tiles (no new StatCard — CURSOR_RULES reuse)
 
+### B-08 files created / changed
+- NEW `src/lib/recommendationApplicator.ts` — PURE `applyRecommendations()` view layer (pain priority, safe-min floor)
+- NEW `docs/ADAPTIVE_PLAN_REVIEW.md`
+- CHANGED `src/types/database.ts` — AdaptiveExercise / AdaptiveDay
+- CHANGED `src/components/ExerciseStepCard.tsx` — optional `why` + `safety` props ("Why this suggestion?" + pain box)
+- CHANGED `src/screens/WorkoutGuideScreen.tsx` — compute adaptive day; pass why/safety; pre-fill SetLogger with suggested weight
+- CHANGED `src/screens/TodayScreen.tsx` — per-exercise adaptive hint line
+- NOTE: planStore + planGenerator UNCHANGED (adaptation is a view layer, per requirement 9)
+
 ### B-02 files created
 - `supabase/migrations/001_initial_schema.sql` — 15 tables, FKs, 19 indexes, RLS (15 policies), updated_at trigger
 - `supabase/seed.sql` — 12 PF beginner machines, placeholder image keys, alt_exercise_id links, idempotent
@@ -199,14 +225,14 @@
 - Screens: `src/screens/{Onboarding,Today,WorkoutGuide,Progress,Library,Settings}Screen.tsx`
 
 ## Reprioritized sequence (per D12 — auth moved late)
-Onboarding ✅ → Plan generation ✅ → Today ✅ → Workout overview ✅ → Guided session + set logging ✅ → Trainer recommendations ✅ → Progress dashboard ✅ → **next: B-08 (TBD)** → *then* Auth + Supabase persistence.
+Onboarding ✅ → Plan generation ✅ → Today ✅ → Workout overview ✅ → Guided session + set logging ✅ → Trainer recommendations ✅ → Progress dashboard ✅ → Adaptive next-workout ✅ → **next: B-09 (TBD)** → *then* Auth + Supabase persistence.
 
-## Next task (single, after approval) — user to choose B-08
+## Next task (single, after approval) — user to choose B-09
 > Per the loop rule: pick ONE item from FEATURE_BACKLOG.md, write a mini-spec, build, check, update this file, STOP.
-- **Candidate A:** Apply recommendations → next session (feed R2/R4 deltas into next workout's suggested weights; advance week on consistency).
-- **Candidate B:** Weekly check-in flow (B-20) + Exercise Library screen (B-21) + Settings (B-22) — finish the remaining local screens.
+- **Candidate A:** Remaining local screens — Exercise Library (B-21), Settings/profile (B-22), Weekly check-in (B-20).
+- **Candidate B:** Multi-day plan navigation (Today shows the correct day across the week; week advance on consistency), so adaptive recs key per day.
 - **Candidate C:** Begin Auth + Supabase persistence (deferred D12) — first real backend wiring + offline-tolerant logging.
-- Awaiting user direction on B-08 scope.
+- Awaiting user direction on B-09 scope.
 
 ## Decisions log
 | # | Decision | Rationale | Date |

@@ -15,6 +15,7 @@ import { useWorkoutSessionStore } from '../state/workoutSessionStore';
 import { useRecommendationStore } from '../state/recommendationStore';
 import { useProgressStore } from '../state/progressStore';
 import { generateRecommendations } from '../lib/trainerEngine';
+import { applyRecommendations } from '../lib/recommendationApplicator';
 
 type GuideRoute = RouteProp<RootStackParamList, 'WorkoutGuide'>;
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -44,6 +45,9 @@ export default function WorkoutGuideScreen() {
   const planDay = getPlanDay(plan, week, dayNumber);
   const session = useWorkoutSessionStore((s) => s.session);
   const { logSet, skipExercise, logCardio, skipCardio, finish } = useWorkoutSessionStore();
+  // Adaptive guidance is a VIEW over the base plan (B-08) — base plan untouched.
+  const history = useProgressStore((s) => s.history);
+  const priorRecs = useRecommendationStore((s) => s.recommendations);
 
   // step 0..strength.length-1 = exercises; strength.length = cardio (if any)
   const [step, setStep] = useState(0);
@@ -115,7 +119,9 @@ export default function WorkoutGuideScreen() {
   }
 
   // ---- Strength step ----
-  const planEx = planDay.strength[step];
+  // Adaptive view: applies prior recommendations + last-used weights (base plan unchanged).
+  const adaptiveDay = applyRecommendations(planDay, history, priorRecs);
+  const planEx = adaptiveDay ? adaptiveDay.strength[step] : planDay.strength[step];
   const exLog = session.exercises[step];
   if (!planEx || !exLog) {
     // Out of range safety — jump to finishing.
@@ -140,14 +146,26 @@ export default function WorkoutGuideScreen() {
     }
   };
 
+  // Pre-fill weight: this session's last set, else the adaptive suggestion.
+  const adaptiveWeight = adaptiveDay ? adaptiveDay.strength[step].adaptiveWeightLb : null;
   const lastWeight =
     setsDone > 0 && exLog.sets[setsDone - 1].weightLb != null
       ? String(exLog.sets[setsDone - 1].weightLb)
-      : undefined;
+      : adaptiveWeight != null
+        ? String(adaptiveWeight)
+        : undefined;
+
+  const adaptiveEx = adaptiveDay ? adaptiveDay.strength[step] : null;
 
   return (
     <ScreenContainer scroll>
-      <ExerciseStepCard exercise={planEx} exerciseIndex={step} totalExercises={strengthCount} />
+      <ExerciseStepCard
+        exercise={planEx}
+        exerciseIndex={step}
+        totalExercises={strengthCount}
+        why={adaptiveEx?.whyExplanation}
+        safety={adaptiveEx?.safetyWarning}
+      />
 
       {/* Pain warning takes priority */}
       {exLog.painReported ? (

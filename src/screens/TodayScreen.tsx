@@ -9,6 +9,9 @@ import { RootStackParamList } from '../navigation/types';
 import { useOnboardingStore } from '../state/onboardingStore';
 import { getPlanDay, usePlanStore } from '../state/planStore';
 import { useWorkoutSessionStore } from '../state/workoutSessionStore';
+import { useProgressStore } from '../state/progressStore';
+import { useRecommendationStore } from '../state/recommendationStore';
+import { applyRecommendations } from '../lib/recommendationApplicator';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -17,6 +20,11 @@ export default function TodayScreen() {
   const completed = useOnboardingStore((s) => s.completed);
   const plan = usePlanStore((s) => s.plan);
   const day = getPlanDay(plan, 1, 1);
+  const history = useProgressStore((s) => s.history);
+  const priorRecs = useRecommendationStore((s) => s.recommendations);
+
+  // Adaptive view over the base day (B-08). Falls back to base when no history.
+  const adaptiveDay = applyRecommendations(day, history, priorRecs);
 
   // Defensive: never crash if onboarding is incomplete or no plan exists yet.
   if (!completed || !plan || !day) {
@@ -43,14 +51,23 @@ export default function TodayScreen() {
           {day.cardio ? ` · ${day.cardio.minutes} min cardio` : ''}
         </Text>
 
-        {day.strength.map((ex) => (
-          <View key={ex.exerciseId} style={styles.exRow}>
-            <Text style={styles.exName}>{ex.name}</Text>
-            <Text style={styles.exMeta}>
-              {ex.sets} × {ex.repMin}–{ex.repMax}
-            </Text>
-          </View>
-        ))}
+        {day.strength.map((ex, i) => {
+          const adaptiveEx = adaptiveDay?.strength[i];
+          const hint = adaptiveEx?.adapted
+            ? adaptiveEx.safetyWarning ?? adaptiveEx.whyExplanation
+            : null;
+          return (
+            <View key={ex.exerciseId} style={styles.exRow}>
+              <View style={styles.exNameWrap}>
+                <Text style={styles.exName}>{ex.name}</Text>
+                {hint ? <Text style={styles.exHint}>{hint}</Text> : null}
+              </View>
+              <Text style={styles.exMeta}>
+                {ex.sets} × {ex.repMin}–{ex.repMax}
+              </Text>
+            </View>
+          );
+        })}
 
         {day.cardio ? (
           <View style={styles.cardioRow}>
@@ -109,7 +126,9 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
     paddingTop: spacing.sm,
   },
-  exName: { ...typography.body, color: colors.text, flex: 1 },
+  exNameWrap: { flex: 1, paddingRight: spacing.sm, gap: 2 },
+  exName: { ...typography.body, color: colors.text },
+  exHint: { ...typography.caption, color: colors.primary },
   exMeta: { ...typography.body, color: colors.primary, fontWeight: '700' },
   cardioRow: {
     flexDirection: 'row',
