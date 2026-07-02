@@ -175,6 +175,7 @@ export default function WorkoutGuideScreen() {
         totalExercises={strengthCount}
         why={adaptiveEx?.whyExplanation}
         safety={adaptiveEx?.safetyWarning}
+        onOpenGuide={() => navigation.navigate('ExerciseDetail', { slug: planEx.slug })}
       />
 
       {/* Pain warning takes priority */}

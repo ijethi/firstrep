@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -131,15 +131,20 @@ export default function TodayScreen() {
             ? adaptiveEx.safetyWarning ?? adaptiveEx.whyExplanation
             : null;
           return (
-            <View key={ex.exerciseId} style={styles.exRow}>
+            <Pressable
+              key={ex.exerciseId}
+              accessibilityRole="button"
+              onPress={() => navigation.navigate('ExerciseDetail', { slug: ex.slug })}
+              style={({ pressed }) => [styles.exRow, pressed && styles.exRowPressed]}
+            >
               <View style={styles.exNameWrap}>
                 <Text style={styles.exName}>{ex.name}</Text>
                 {hint ? <Text style={styles.exHint}>{hint}</Text> : null}
               </View>
               <Text style={styles.exMeta}>
-                {ex.sets} × {ex.repMin}–{ex.repMax}
+                {ex.sets} × {ex.repMin}–{ex.repMax} ›
               </Text>
-            </View>
+            </Pressable>
           );
         })}
 
@@ -200,6 +205,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
     paddingTop: spacing.sm,
   },
+  exRowPressed: { opacity: 0.6 },
   exNameWrap: { flex: 1, paddingRight: spacing.sm, gap: 2 },
   exName: { ...typography.body, color: colors.text },
   exHint: { ...typography.caption, color: colors.primary },

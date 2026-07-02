@@ -7,11 +7,26 @@
 ---
 
 ## Current loop
-- **Loop #:** 12 — **B-12 Weekly check-in**
-- **Goal of this loop:** Local persisted weekly check-in: short coaching form, rule-based message, prompt/summary card on Today + Progress. No plan changes. Local only.
-- **Success condition:** Open from Today/Progress; answer all questions; saves + persists; Progress shows latest summary; rule-based message; empty state; typecheck + check-in assertions pass.
-- **Ceiling:** Max 3 fix attempts. (Used: 0 — passed on first checker pass.)
-- **Status:** ✅ Complete — awaiting approval for B-13.
+- **Loop #:** 13 — **B-13 Settings/profile build-out + machine-guide → Library link**
+- **Goal of this loop:** Real Settings (profile summary + editable units/days/duration/injuries), confirmed plan regeneration that preserves history, and a "Need help with this machine?" link into Exercise Detail. Local only.
+- **Success condition:** Settings shows real data; edit units/days/duration/injuries; regenerate on confirm; history preserved; workout guide links to Exercise Detail; no crash on partial profile; typecheck + settings assertions pass.
+- **Ceiling:** Max 3 fix attempts. (Used: 1 — `WorkoutLength` typing on duration state.)
+- **Status:** ✅ Complete — awaiting approval for B-14.
+
+### Loop 13 verification (maker-checker — typecheck + 11 executed assertions)
+| Gate | Result |
+|------|--------|
+| `npx tsc --noEmit` | ✅ PASSED (after 1 fix) |
+| Settings shows real profile + prefs | ✅ profile summary + units + days + duration + injuries |
+| Edit units (display only, no corruption) | ✅ toggle flips unit_pref; canonical kg/cm unchanged |
+| Edit days/duration/injuries + confirm | ✅ confirm alert → regenerate `generatePlan` |
+| Regenerate keeps history | ✅ only planStore/planProgress touched; progressStore + weeklyCheckIn untouched |
+| Reset progress only on structure (days) change | ✅ duration/injury keep progress; days change resets (asserted) |
+| Machine guide → Exercise Detail | ✅ ExerciseStepCard `onOpenGuide`; WorkoutGuide + tappable Today rows |
+| No exercise-instruction duplication in Settings | ✅ detail stays source of truth |
+| Persistence (B-10 pattern) | ✅ via setAnswer/setPlan (persisted) |
+| Partial profile no crash | ✅ "—" fallbacks; null-safe decide (asserted) |
+| No backend/Supabase/auth/AI/nutrition/analytics/wearable | ✅ |
 
 ### Loop 12 verification (maker-checker — typecheck + 13 executed assertions)
 | Gate | Result |
@@ -316,6 +331,17 @@
 - CHANGED `src/navigation/{types.ts,RootNavigator.tsx}` — WeeklyCheckIn route
 - CHANGED `src/screens/{TodayScreen,ProgressScreen}.tsx` — check-in card + open route
 
+### B-13 files created / changed
+- NEW `src/lib/settingsProfile.ts` — PURE decidePlanUpdate / structureChanged / planAffectingChanged / injuriesEqual
+- NEW `src/components/{SettingsSection,UnitToggle}.tsx` (SettingsSection also exports SettingRow)
+- NEW `docs/SETTINGS_PROFILE_REVIEW.md`
+- CHANGED `src/screens/SettingsScreen.tsx` — real sections, editable prefs, confirmed regeneration (history preserved)
+- CHANGED `src/components/ExerciseStepCard.tsx` — optional `onOpenGuide` ("Need help with this machine?")
+- CHANGED `src/screens/WorkoutGuideScreen.tsx` — pass onOpenGuide → ExerciseDetail
+- CHANGED `src/screens/TodayScreen.tsx` — exercise rows tappable → ExerciseDetail
+- REUSED `MultiChoiceGroup`/`ChoiceGroup` for injuries/days/duration (no InjurySelector duplication)
+- NOTE: onboardingStore.setAnswer covers edits (no new edit actions); planStore/planProgress reused
+
 ### B-02 files created
 - `supabase/migrations/001_initial_schema.sql` — 15 tables, FKs, 19 indexes, RLS (15 policies), updated_at trigger
 - `supabase/seed.sql` — 12 PF beginner machines, placeholder image keys, alt_exercise_id links, idempotent
@@ -331,14 +357,14 @@
 - Screens: `src/screens/{Onboarding,Today,WorkoutGuide,Progress,Library,Settings}Screen.tsx`
 
 ## Reprioritized sequence (per D12 — auth moved late)
-Onboarding ✅ → Plan generation ✅ → Today ✅ → Workout overview ✅ → Guided session + set logging ✅ → Trainer recommendations ✅ → Progress dashboard ✅ → Adaptive next-workout ✅ → Multi-day navigation/progression ✅ → Local persistence ✅ → Exercise Library ✅ → Weekly check-in ✅ → **next: B-13 (TBD)** → *then* Auth + Supabase sync.
+Onboarding ✅ → Plan generation ✅ → Today ✅ → Workout overview ✅ → Guided session + set logging ✅ → Trainer recommendations ✅ → Progress dashboard ✅ → Adaptive next-workout ✅ → Multi-day navigation/progression ✅ → Local persistence ✅ → Exercise Library ✅ → Weekly check-in ✅ → Settings/profile + machine-guide link ✅ → **next: B-14 (TBD)** → *then* Auth + Supabase sync.
 
-## Next task (single, after approval) — user to choose B-13
+## Next task (single, after approval) — user to choose B-14
 > Per the loop rule: pick ONE item from FEATURE_BACKLOG.md, write a mini-spec, build, check, update this file, STOP.
-- **Candidate A:** Settings/profile build-out (B-22) — edit profile, update injuries → regenerate safe plan, restart plan, unit toggle; link the live machine guide to Library detail.
-- **Candidate B:** Body measurements + progress photos (local) — finish B-17/B-19 (measurements logging, photo capture to local) without backend.
-- **Candidate C:** Begin Auth + Supabase sync (deferred D12) — first real backend wiring + offline-tolerant logging (B-23).
-- Awaiting user direction on B-13 scope.
+- **Candidate A:** Body measurements + progress photos (local) — B-17 (waist/hip/etc, cm canonical) + B-19 (photo capture to local file/storage, private) without backend.
+- **Candidate B:** Rest-timer polish + resumable session (safe recovery of an in-progress workout across reload) — B-23 groundwork, still local.
+- **Candidate C:** Begin Auth + Supabase sync (deferred D12) — first real backend wiring + offline-tolerant logging.
+- Awaiting user direction on B-14 scope.
 
 ## Decisions log
 | # | Decision | Rationale | Date |

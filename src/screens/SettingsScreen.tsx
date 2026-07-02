@@ -1,20 +1,92 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Alert, StyleSheet, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { AppButton, ScreenContainer } from '../components';
-import { colors, typography } from '../theme';
-import { defaultUnitSystem } from '../lib/units';
-import { resetLocalAppData } from '../lib/resetAppData';
+import SettingsSection, { SettingRow } from '../components/SettingsSection';
+import UnitToggle from '../components/UnitToggle';
+import { ChoiceGroup, MultiChoiceGroup } from '../components/onboarding';
+import type { ChoiceOption } from '../components/onboarding';
+import { colors, spacing, typography } from '../theme';
+import { formatLength, formatWeight } from '../lib/units';
 import { RootStackParamList } from '../navigation/types';
+import { useOnboardingStore } from '../state/onboardingStore';
+import type { WorkoutLength } from '../state/onboardingStore';
+import { usePlanStore } from '../state/planStore';
+import { usePlanProgressStore } from '../state/planProgressStore';
+import { generatePlan } from '../lib/planGenerator';
+import { decidePlanUpdate } from '../lib/settingsProfile';
+import { resetLocalAppData } from '../lib/resetAppData';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
+const DAYS_OPTIONS: ChoiceOption<number>[] = [
+  { label: '2 days', value: 2 },
+  { label: '3 days', value: 3 },
+  { label: '4 days', value: 4 },
+];
+const DURATION_OPTIONS: ChoiceOption<WorkoutLength>[] = [
+  { label: '20 min', value: 20 },
+  { label: '30 min', value: 30 },
+  { label: '45 min', value: 45 },
+];
+const INJURY_OPTIONS = [
+  { label: 'None', value: 'none' },
+  { label: 'Knee', value: 'knee' },
+  { label: 'Shoulder', value: 'shoulder' },
+  { label: 'Lower back', value: 'back' },
+  { label: 'Wrist', value: 'wrist' },
+  { label: 'Hip', value: 'hip' },
+  { label: 'Ankle', value: 'ankle' },
+  { label: 'Neck', value: 'neck' },
+];
+
+const GOAL_LABEL: Record<string, string> = { weight_loss: 'Lose weight' };
+
 export default function SettingsScreen() {
   const navigation = useNavigation<Nav>();
-  const unitLabel =
-    defaultUnitSystem === 'imperial' ? 'lb / in (imperial)' : 'kg / cm (metric)';
+  const answers = useOnboardingStore((s) => s.answers);
+  const setAnswer = useOnboardingStore((s) => s.setAnswer);
+
+  // Editable workout-preference state (units apply immediately; these need confirm).
+  const [days, setDays] = useState<number | null>(answers.daysPerWeek);
+  const [duration, setDuration] = useState<WorkoutLength | null>(answers.workoutLengthMin);
+  const [injuries, setInjuries] = useState<string[]>(answers.injuries);
+
+  const normalizedInjuries = injuries.filter((v) => v !== 'none');
+  const prevPrefs = {
+    daysPerWeek: answers.daysPerWeek,
+    workoutLengthMin: answers.workoutLengthMin,
+    injuries: answers.injuries,
+  };
+  const nextPrefs = { daysPerWeek: days, workoutLengthMin: duration, injuries: normalizedInjuries };
+  const decision = decidePlanUpdate(prevPrefs, nextPrefs);
+
+  const dv = (v: string | number | null | undefined) => (v == null || v === '' ? '—' : String(v));
+  const injuryDisplay =
+    answers.injuries.length === 0 ? 'None' : answers.injuries.join(', ');
+
+  const applyChanges = () => {
+    setAnswer('daysPerWeek', days);
+    setAnswer('workoutLengthMin', duration);
+    setAnswer('injuries', normalizedInjuries);
+    const updated = useOnboardingStore.getState().answers;
+    usePlanStore.getState().setPlan(generatePlan(updated));
+    if (decision.resetProgress) usePlanProgressStore.getState().reset();
+  };
+
+  const onSavePrefs = () => {
+    if (!decision.regenerate) return;
+    Alert.alert(
+      'Update your plan?',
+      'This can update your future workout plan. Your completed history will stay safe.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Update plan', onPress: applyChanges },
+      ],
+    );
+  };
 
   const onReset = () => {
     Alert.alert(
@@ -36,21 +108,71 @@ export default function SettingsScreen() {
 
   return (
     <ScreenContainer scroll>
-      <Text style={typography.h1}>Profile</Text>
-      <Text style={[typography.body, styles.muted]}>
-        Update anything here. Changed injuries? Tell us and we&apos;ll adjust your moves.
-      </Text>
+      <Text style={typography.h1}>Profile & Settings</Text>
 
-      <Text style={typography.body}>Goal: Weight loss</Text>
-      <Text style={typography.body}>Units: {unitLabel}</Text>
+      <SettingsSection title="Profile">
+        <SettingRow label="Main goal" value={answers.goal ? GOAL_LABEL[answers.goal] : '—'} />
+        <SettingRow label="Sex" value={dv(answers.sex)} />
+        <SettingRow label="Age" value={dv(answers.age)} />
+        <SettingRow
+          label="Height"
+          value={answers.heightCm != null ? formatLength(answers.heightCm, answers.unitPref) : '—'}
+        />
+        <SettingRow
+          label="Current weight"
+          value={
+            answers.currentWeightKg != null ? formatWeight(answers.currentWeightKg, answers.unitPref) : '—'
+          }
+        />
+        <SettingRow
+          label="Goal weight"
+          value={answers.goalWeightKg != null ? formatWeight(answers.goalWeightKg, answers.unitPref) : '—'}
+        />
+        <SettingRow label="Experience" value={answers.experience === 'some' ? 'Some' : 'Beginner'} />
+      </SettingsSection>
 
-      <AppButton label="Restart plan" variant="secondary" onPress={() => {}} />
-      <AppButton label="Reset local data" variant="secondary" onPress={onReset} />
-      <AppButton label="Sign out" variant="ghost" onPress={() => {}} />
+      <SettingsSection title="Units">
+        <Text style={styles.help}>
+          Display only. Your data is stored consistently — switching won&apos;t change your numbers.
+        </Text>
+        <UnitToggle value={answers.unitPref} onChange={(u) => setAnswer('unitPref', u)} />
+      </SettingsSection>
+
+      <SettingsSection title="Workout preferences">
+        <Text style={styles.help}>Days per week</Text>
+        <ChoiceGroup value={days} onSelect={setDays} options={DAYS_OPTIONS} />
+
+        <Text style={styles.help}>Workout length</Text>
+        <ChoiceGroup value={duration} onSelect={setDuration} options={DURATION_OPTIONS} />
+      </SettingsSection>
+
+      <SettingsSection title="Injuries & safety">
+        <Text style={styles.help}>
+          Anything hurting? We&apos;ll avoid it and pick safer moves in your next plan.
+        </Text>
+        <MultiChoiceGroup
+          options={INJURY_OPTIONS}
+          noneValue="none"
+          selected={injuries}
+          onChange={(next) => setInjuries(next.includes('none') ? [] : next)}
+        />
+        <SettingRow label="Currently avoiding" value={injuryDisplay} />
+      </SettingsSection>
+
+      {decision.regenerate ? (
+        <AppButton label="Save workout changes" onPress={onSavePrefs} />
+      ) : null}
+
+      <SettingsSection title="Local data">
+        <Text style={styles.help}>
+          Everything stays on this device. Resetting clears your plan and logs.
+        </Text>
+        <AppButton label="Reset local data" variant="secondary" onPress={onReset} />
+      </SettingsSection>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  muted: { color: colors.textMuted },
+  help: { ...typography.caption, color: colors.textMuted },
 });

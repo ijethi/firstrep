@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing, typography } from '../theme';
 import type { PlanStrengthExercise } from '../types/database';
@@ -12,6 +12,8 @@ interface Props {
   why?: string | null;
   /** Adaptive pain/safety warning from the recommendation applicator. */
   safety?: string | null;
+  /** Opens the full Exercise Detail guide for this machine, if provided. */
+  onOpenGuide?: () => void;
 }
 
 const SAFETY = 'Stop if you feel sharp pain.';
@@ -23,6 +25,7 @@ export default function ExerciseStepCard({
   totalExercises,
   why,
   safety,
+  onOpenGuide,
 }: Props) {
   return (
     <View style={styles.wrap}>
@@ -63,6 +66,12 @@ export default function ExerciseStepCard({
       <View style={styles.safety}>
         <Text style={styles.safetyText}>⚠️ {SAFETY}</Text>
       </View>
+
+      {onOpenGuide ? (
+        <Pressable accessibilityRole="button" onPress={onOpenGuide} style={styles.helpLink}>
+          <Text style={styles.helpLinkText}>❔ Need help with this machine?</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -90,6 +99,8 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   safetyText: { ...typography.body, color: colors.danger, fontWeight: '600' },
+  helpLink: { marginTop: spacing.sm, alignSelf: 'flex-start' },
+  helpLinkText: { ...typography.body, color: colors.primary, fontWeight: '700' },
   whyBox: {
     marginTop: spacing.xs,
     backgroundColor: '#E8F3F0',

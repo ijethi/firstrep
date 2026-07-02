@@ -45,7 +45,7 @@
 ## Epic F — Check-in & Library & Settings (P1)
 - [x] **B-20** Weekly check-in flow (M) — ✅ Loop 12 (user-sequence "B-12"). Persisted local check-in (workouts/energy/soreness/confidence/barriers/goal), rule-based coaching message, prompt + latest-summary card on Today + Progress. Maps to `weekly_checkins`. Pure logic tested. (Plan-modifying R5/R7 + due-detection deferred.)
 - [x] **B-21** Exercise library screen (S) — ✅ Loop 11 (user-sequence "B-11"). List + search + filters (upper/lower/cardio/core/beginner-safe) + detail (setup/form/mistakes/safety/guidance/alternative). Catalog extended with primaryMuscles/commonMistakes/safetyNote. Pure filter logic tested.
-- [ ] **B-22** Settings/profile (S) — edit profile, prefs, update injuries (re-plan), restart plan, disclaimer, sign out. *Success: injury update regenerates safe plan.*
+- [~] **B-22** Settings/profile (S) — ✅ core in Loop 13 (user-sequence "B-13"). Profile summary + editable units/days/duration/injuries, confirmed plan regeneration (history preserved), machine-guide→Exercise Detail link, Reset Local Data. Medical disclaimer + sign out (auth) still TODO.
 
 ## Epic G — Polish & connector prep (P1/P2)
 - [~] **B-10** Local persistence (user-sequence "B-10") — ✅ Loop 10. AsyncStorage + Zustand persist for onboarding/plan/planProgress/progress/recommendation; hydration gate (no flicker); version/migrate; `resetLocalAppData`. Live session intentionally not persisted. Offline write-queue/Supabase sync still in B-23.
