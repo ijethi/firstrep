@@ -1,4 +1,9 @@
-import type { BodyWeightEntry, WorkoutSessionLocal } from '../types/database';
+import type {
+  BodyMeasurementEntry,
+  BodyWeightEntry,
+  ProgressPhotoEntry,
+  WorkoutSessionLocal,
+} from '../types/database';
 
 /**
  * Progress calculations (B-07) — PURE functions over local history. No I/O,
@@ -138,6 +143,53 @@ export function weightProgress(entries: BodyWeightEntry[]): WeightProgress {
   const firstKg = sorted[0].weightKg;
   const latestKg = sorted[sorted.length - 1].weightKg;
   return { latestKg, firstKg, changeKg: latestKg - firstKg, count: sorted.length };
+}
+
+// ---- body measurements (canonical cm) ------------------------------------
+
+type MeasureKey = 'waistCm' | 'chestCm' | 'hipCm';
+
+export interface MeasurementProgress {
+  latest: BodyMeasurementEntry | null;
+  waistChangeCm: number | null; // latest - first (null if <2 readings for that metric)
+  chestChangeCm: number | null;
+  hipChangeCm: number | null;
+  count: number;
+}
+
+function changeForKey(sorted: BodyMeasurementEntry[], key: MeasureKey): number | null {
+  const values = sorted.map((e) => e[key]).filter((v): v is number => v != null);
+  if (values.length < 2) return null; // need a start and a latest to show change
+  return values[values.length - 1] - values[0];
+}
+
+export function measurementProgress(entries: BodyMeasurementEntry[]): MeasurementProgress {
+  if (entries.length === 0) {
+    return { latest: null, waistChangeCm: null, chestChangeCm: null, hipChangeCm: null, count: 0 };
+  }
+  const sorted = [...entries].sort((a, b) => a.loggedOnISO.localeCompare(b.loggedOnISO));
+  return {
+    latest: sorted[sorted.length - 1],
+    waistChangeCm: changeForKey(sorted, 'waistCm'),
+    chestChangeCm: changeForKey(sorted, 'chestCm'),
+    hipChangeCm: changeForKey(sorted, 'hipCm'),
+    count: sorted.length,
+  };
+}
+
+// ---- progress photos (local uris only) -----------------------------------
+
+export interface PhotoProgress {
+  latest: ProgressPhotoEntry | null;
+  recent: ProgressPhotoEntry[]; // newest-first, up to `limit`
+  count: number;
+}
+
+export function photoProgress(photos: ProgressPhotoEntry[], limit = 6): PhotoProgress {
+  if (photos.length === 0) return { latest: null, recent: [], count: 0 };
+  const sorted = [...photos].sort((a, b) => a.loggedOnISO.localeCompare(b.loggedOnISO));
+  const newestFirst = [...sorted].reverse();
+  return { latest: newestFirst[0], recent: newestFirst.slice(0, limit), count: sorted.length };
 }
 
 /** Beginner-friendly weekly message based on how many workouts are done. */

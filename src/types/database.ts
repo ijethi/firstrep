@@ -321,6 +321,29 @@ export interface BodyWeightEntry {
   source: 'manual';
 }
 
+/** Body measurements — stored CANONICALLY in cm. Maps to body_measurement_logs. */
+export interface BodyMeasurementEntry {
+  waistCm: number | null;
+  chestCm: number | null;
+  hipCm: number | null;
+  note: string | null;
+  loggedOnISO: string;
+  source: 'manual';
+}
+
+export type PhotoAngle = 'front' | 'side' | 'back';
+
+/**
+ * Progress photo — LOCAL device uri only, never uploaded. Maps to
+ * progress_photos (storage_path → uri, pose → angle) when a backend arrives.
+ */
+export interface ProgressPhotoEntry {
+  uri: string;
+  angle: PhotoAngle | null;
+  note: string | null;
+  loggedOnISO: string;
+}
+
 // ---- adaptive plan view types (B-08) -------------------------------------
 // A VIEW layer over a PlanDay: the base plan is never mutated. Applies trainer
 // recommendations + last-used weights to produce adaptive suggestions for the

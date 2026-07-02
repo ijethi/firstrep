@@ -1,7 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-import type { BodyWeightEntry, WorkoutSessionLocal } from '../types/database';
+import type {
+  BodyMeasurementEntry,
+  BodyWeightEntry,
+  ProgressPhotoEntry,
+  WorkoutSessionLocal,
+} from '../types/database';
 import { appJSONStorage } from '../lib/storage';
 import { migratePersisted, PERSIST_VERSION, STORAGE_KEYS } from '../lib/persistConfig';
 
@@ -14,8 +19,12 @@ import { migratePersisted, PERSIST_VERSION, STORAGE_KEYS } from '../lib/persistC
 interface ProgressState {
   history: WorkoutSessionLocal[];
   bodyWeights: BodyWeightEntry[];
+  measurements: BodyMeasurementEntry[];
+  photos: ProgressPhotoEntry[];
   addSession: (session: WorkoutSessionLocal) => void;
   addBodyWeight: (weightKg: number, loggedOnISO: string) => void;
+  addMeasurement: (entry: BodyMeasurementEntry) => void;
+  addPhoto: (entry: ProgressPhotoEntry) => void;
   clear: () => void;
 }
 
@@ -24,19 +33,28 @@ export const useProgressStore = create<ProgressState>()(
     (set) => ({
       history: [],
       bodyWeights: [],
+      measurements: [],
+      photos: [],
       addSession: (session) => set((s) => ({ history: [...s.history, session] })),
       addBodyWeight: (weightKg, loggedOnISO) =>
         set((s) => ({
           bodyWeights: [...s.bodyWeights, { weightKg, loggedOnISO, source: 'manual' }],
         })),
-      clear: () => set({ history: [], bodyWeights: [] }),
+      addMeasurement: (entry) => set((s) => ({ measurements: [...s.measurements, entry] })),
+      addPhoto: (entry) => set((s) => ({ photos: [...s.photos, entry] })),
+      clear: () => set({ history: [], bodyWeights: [], measurements: [], photos: [] }),
     }),
     {
       name: STORAGE_KEYS.progress,
       storage: appJSONStorage,
       version: PERSIST_VERSION,
       migrate: (s, v) => migratePersisted(s, v),
-      partialize: (s) => ({ history: s.history, bodyWeights: s.bodyWeights }),
+      partialize: (s) => ({
+        history: s.history,
+        bodyWeights: s.bodyWeights,
+        measurements: s.measurements,
+        photos: s.photos,
+      }),
     },
   ),
 );

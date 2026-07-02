@@ -7,11 +7,27 @@
 ---
 
 ## Current loop
-- **Loop #:** 13 — **B-13 Settings/profile build-out + machine-guide → Library link**
-- **Goal of this loop:** Real Settings (profile summary + editable units/days/duration/injuries), confirmed plan regeneration that preserves history, and a "Need help with this machine?" link into Exercise Detail. Local only.
-- **Success condition:** Settings shows real data; edit units/days/duration/injuries; regenerate on confirm; history preserved; workout guide links to Exercise Detail; no crash on partial profile; typecheck + settings assertions pass.
-- **Ceiling:** Max 3 fix attempts. (Used: 1 — `WorkoutLength` typing on duration state.)
-- **Status:** ✅ Complete — awaiting approval for B-14.
+- **Loop #:** 14 — **B-14 Local body measurements + progress photos**
+- **Goal of this loop:** Track waist/chest/hips (cm canonical) + local progress photos on Progress; latest + change; persisted; photos stay on device. Local only.
+- **Success condition:** Log waist/chest/hips; see latest + change; add local photo; latest photo or safe empty state; persists; typecheck + measurement/photo assertions pass.
+- **Ceiling:** Max 3 fix attempts. (Used: 0 — passed on first checker pass.)
+- **Status:** ✅ Complete — awaiting approval for B-15.
+
+### Loop 14 verification (maker-checker — typecheck + 12 executed assertions)
+| Gate | Result |
+|------|--------|
+| `npx expo install expo-image-picker` | ✅ ~16.0.6 |
+| `npx tsc --noEmit` | ✅ PASSED |
+| Log waist/chest/hips (cm canonical) | ✅ input in unit → inToCm; display formatLength |
+| Latest + change since first (per metric) | ✅ needs ≥2 readings (asserted) |
+| Units don't corrupt canonical cm | ✅ toggle = display only |
+| Add local progress photo | ✅ expo-image-picker; stores local uri only (never uploaded) |
+| Latest photo + recent grid | ✅ newest-first, ≤6 |
+| Privacy + encouraging + empty copy | ✅ "stay on this device" / "scale misses" / no-pressure empties |
+| Persistence (B-10 pattern) | ✅ measurements+photos in progressStore partialize + clear |
+| Maps to DB | ✅ body_measurement_logs / progress_photos (uri→storage_path later) |
+| Empty states / picker cancel / bad uri | ✅ no crash |
+| No backend/Supabase/auth/AI/nutrition/analytics/wearable/photo-analysis | ✅ |
 
 ### Loop 13 verification (maker-checker — typecheck + 11 executed assertions)
 | Gate | Result |
@@ -342,6 +358,16 @@
 - REUSED `MultiChoiceGroup`/`ChoiceGroup` for injuries/days/duration (no InjurySelector duplication)
 - NOTE: onboardingStore.setAnswer covers edits (no new edit actions); planStore/planProgress reused
 
+### B-14 files created / changed
+- NEW `src/components/{MeasurementLogCard,ProgressPhotoCard}.tsx`
+- NEW `docs/BODY_PROGRESS_REVIEW.md`
+- CHANGED `src/types/database.ts` — BodyMeasurementEntry / PhotoAngle / ProgressPhotoEntry
+- CHANGED `src/state/progressStore.ts` — measurements[]/photos[] + addMeasurement/addPhoto + partialize + clear
+- CHANGED `src/lib/progressStats.ts` — PURE measurementProgress / photoProgress
+- CHANGED `src/screens/ProgressScreen.tsx` — measurement + photo cards + encouraging copy
+- CHANGED `app.json` — expo-image-picker plugin + iOS NSPhotoLibraryUsageDescription
+- CHANGED `package.json` — added `expo-image-picker`
+
 ### B-02 files created
 - `supabase/migrations/001_initial_schema.sql` — 15 tables, FKs, 19 indexes, RLS (15 policies), updated_at trigger
 - `supabase/seed.sql` — 12 PF beginner machines, placeholder image keys, alt_exercise_id links, idempotent
@@ -357,14 +383,14 @@
 - Screens: `src/screens/{Onboarding,Today,WorkoutGuide,Progress,Library,Settings}Screen.tsx`
 
 ## Reprioritized sequence (per D12 — auth moved late)
-Onboarding ✅ → Plan generation ✅ → Today ✅ → Workout overview ✅ → Guided session + set logging ✅ → Trainer recommendations ✅ → Progress dashboard ✅ → Adaptive next-workout ✅ → Multi-day navigation/progression ✅ → Local persistence ✅ → Exercise Library ✅ → Weekly check-in ✅ → Settings/profile + machine-guide link ✅ → **next: B-14 (TBD)** → *then* Auth + Supabase sync.
+Onboarding ✅ → Plan generation ✅ → Today ✅ → Workout overview ✅ → Guided session + set logging ✅ → Trainer recommendations ✅ → Progress dashboard ✅ → Adaptive next-workout ✅ → Multi-day navigation/progression ✅ → Local persistence ✅ → Exercise Library ✅ → Weekly check-in ✅ → Settings/profile + machine-guide link ✅ → Body measurements + photos ✅ → **next: B-15 (TBD)** → *then* Auth + Supabase sync.
 
-## Next task (single, after approval) — user to choose B-14
+## Next task (single, after approval) — user to choose B-15
 > Per the loop rule: pick ONE item from FEATURE_BACKLOG.md, write a mini-spec, build, check, update this file, STOP.
-- **Candidate A:** Body measurements + progress photos (local) — B-17 (waist/hip/etc, cm canonical) + B-19 (photo capture to local file/storage, private) without backend.
-- **Candidate B:** Rest-timer polish + resumable session (safe recovery of an in-progress workout across reload) — B-23 groundwork, still local.
-- **Candidate C:** Begin Auth + Supabase sync (deferred D12) — first real backend wiring + offline-tolerant logging.
-- Awaiting user direction on B-14 scope.
+- **Candidate A:** Resumable in-progress session (safe recovery across reload) — persist the live session behind a "Resume your workout?" prompt (B-23 groundwork), still local.
+- **Candidate B:** Medical disclaimer + first-run intro/tips + small UX polish (rest-timer haptics/sound), local.
+- **Candidate C:** Begin Auth + Supabase sync (deferred D12) — first real backend wiring + upload progress photos to private Storage.
+- Awaiting user direction on B-15 scope.
 
 ## Decisions log
 | # | Decision | Rationale | Date |

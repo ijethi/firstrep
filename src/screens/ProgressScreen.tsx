@@ -8,10 +8,14 @@ import CardioProgressCard from '../components/CardioProgressCard';
 import StrengthProgressCard from '../components/StrengthProgressCard';
 import TrainerRecommendationCard from '../components/TrainerRecommendationCard';
 import WeightLogCard from '../components/WeightLogCard';
+import MeasurementLogCard from '../components/MeasurementLogCard';
+import ProgressPhotoCard from '../components/ProgressPhotoCard';
 import WeeklyCheckInCard from '../components/WeeklyCheckInCard';
 import { colors, spacing, typography } from '../theme';
 import {
   cardioProgress,
+  measurementProgress,
+  photoProgress,
   strengthProgress,
   summarize,
   weeklyMessage,
@@ -30,7 +34,11 @@ export default function ProgressScreen() {
   const navigation = useNavigation<Nav>();
   const history = useProgressStore((s) => s.history);
   const bodyWeights = useProgressStore((s) => s.bodyWeights);
+  const measurements = useProgressStore((s) => s.measurements);
+  const photos = useProgressStore((s) => s.photos);
   const addBodyWeight = useProgressStore((s) => s.addBodyWeight);
+  const addMeasurement = useProgressStore((s) => s.addMeasurement);
+  const addPhoto = useProgressStore((s) => s.addPhoto);
   const recommendations = useRecommendationStore((s) => s.recommendations);
   const unit = useOnboardingStore((s) => s.answers.unitPref);
   const checkIns = useWeeklyCheckInStore((s) => s.checkIns);
@@ -96,6 +104,12 @@ export default function ProgressScreen() {
         unit={unit}
         onAdd={(kg) => addBodyWeight(kg, new Date().toISOString())}
       />
+
+      <Text style={[typography.caption, styles.message]}>
+        Photos and measurements can show progress the scale misses.
+      </Text>
+      <MeasurementLogCard stats={measurementProgress(measurements)} unit={unit} onAdd={addMeasurement} />
+      <ProgressPhotoCard stats={photoProgress(photos)} onAdd={addPhoto} />
     </ScreenContainer>
   );
 }

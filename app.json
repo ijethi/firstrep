@@ -12,11 +12,22 @@
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "FirstRep lets you add progress photos from your library. Photos stay on this device."
+      }
     },
     "android": {},
     "web": {
       "bundler": "metro"
-    }
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "FirstRep lets you add progress photos from your library. Photos stay on this device."
+        }
+      ]
+    ]
   }
 }
