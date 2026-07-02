@@ -337,3 +337,30 @@ export interface AdaptiveExercise extends PlanStrengthExercise {
 export interface AdaptiveDay extends Omit<PlanDay, 'strength'> {
   strength: AdaptiveExercise[];
 }
+
+// ---- weekly check-in types (local, B-12) ---------------------------------
+// A short coaching reflection. Maps to the `weekly_checkins` table; the
+// categorical answers convert to the table's 1–5 int scales via lib/weeklyCheckIn.
+
+export type CheckInEnergy = 'low' | 'okay' | 'good';
+export type CheckInSoreness = 'none' | 'mild' | 'moderate' | 'high';
+export type CheckInConfidence = 'low' | 'medium' | 'high';
+export type CheckInBarrier =
+  | 'time'
+  | 'soreness'
+  | 'motivation'
+  | 'gym_anxiety'
+  | 'schedule'
+  | 'other'
+  | 'none';
+
+export interface WeeklyCheckInEntry {
+  weekNumber: number;
+  workoutsCompleted: number;
+  energy: CheckInEnergy;
+  soreness: CheckInSoreness;
+  confidence: CheckInConfidence;
+  barriers: CheckInBarrier[];
+  smallGoal: string; // free-text goal for next week (may be empty)
+  createdAtISO: string;
+}

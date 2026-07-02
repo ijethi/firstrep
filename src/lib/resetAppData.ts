@@ -4,6 +4,7 @@ import { usePlanStore } from '../state/planStore';
 import { usePlanProgressStore } from '../state/planProgressStore';
 import { useProgressStore } from '../state/progressStore';
 import { useRecommendationStore } from '../state/recommendationStore';
+import { useWeeklyCheckInStore } from '../state/weeklyCheckInStore';
 import { useWorkoutSessionStore } from '../state/workoutSessionStore';
 
 /**
@@ -19,5 +20,6 @@ export async function resetLocalAppData(): Promise<void> {
   usePlanProgressStore.getState().reset();
   useProgressStore.getState().clear();
   useRecommendationStore.setState({ recommendations: [], completedCount: 0 });
+  useWeeklyCheckInStore.getState().clear();
   useWorkoutSessionStore.getState().clear();
 }

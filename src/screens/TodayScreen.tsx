@@ -5,6 +5,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { AppButton, ScreenContainer } from '../components';
 import WeekPlanStrip from '../components/WeekPlanStrip';
+import WeeklyCheckInCard from '../components/WeeklyCheckInCard';
 import { colors, radius, spacing, typography } from '../theme';
 import { RootStackParamList } from '../navigation/types';
 import { useOnboardingStore } from '../state/onboardingStore';
@@ -16,6 +17,8 @@ import { usePlanProgressStore } from '../state/planProgressStore';
 import { applyRecommendations } from '../lib/recommendationApplicator';
 import { dayIdOf, getPlanProgress } from '../lib/planProgress';
 import { generatePlan } from '../lib/planGenerator';
+import { useWeeklyCheckInStore } from '../state/weeklyCheckInStore';
+import { latestCheckIn } from '../lib/weeklyCheckIn';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -47,6 +50,7 @@ export default function TodayScreen() {
   const selectedDayId = usePlanProgressStore((s) => s.selectedDayId);
   const selectDay = usePlanProgressStore((s) => s.selectDay);
   const resetProgress = usePlanProgressStore((s) => s.reset);
+  const checkIns = useWeeklyCheckInStore((s) => s.checkIns);
 
   const progress = getPlanProgress(plan, completedDayIds, selectedDayId);
   const day = progress.selectedDay;
@@ -157,6 +161,11 @@ export default function TodayScreen() {
           useWorkoutSessionStore.getState().startSession(day, new Date().toISOString());
           navigation.navigate('WorkoutGuide', { week: day.weekNumber, dayNumber: day.dayNumber });
         }}
+      />
+
+      <WeeklyCheckInCard
+        latest={latestCheckIn(checkIns)}
+        onStart={() => navigation.navigate('WeeklyCheckIn')}
       />
     </ScreenContainer>
   );

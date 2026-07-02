@@ -1,11 +1,14 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { ProgressCard, ScreenContainer } from '../components';
 import CardioProgressCard from '../components/CardioProgressCard';
 import StrengthProgressCard from '../components/StrengthProgressCard';
 import TrainerRecommendationCard from '../components/TrainerRecommendationCard';
 import WeightLogCard from '../components/WeightLogCard';
+import WeeklyCheckInCard from '../components/WeeklyCheckInCard';
 import { colors, spacing, typography } from '../theme';
 import {
   cardioProgress,
@@ -17,13 +20,20 @@ import {
 import { useProgressStore } from '../state/progressStore';
 import { useRecommendationStore } from '../state/recommendationStore';
 import { useOnboardingStore } from '../state/onboardingStore';
+import { useWeeklyCheckInStore } from '../state/weeklyCheckInStore';
+import { latestCheckIn } from '../lib/weeklyCheckIn';
+import { RootStackParamList } from '../navigation/types';
+
+type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export default function ProgressScreen() {
+  const navigation = useNavigation<Nav>();
   const history = useProgressStore((s) => s.history);
   const bodyWeights = useProgressStore((s) => s.bodyWeights);
   const addBodyWeight = useProgressStore((s) => s.addBodyWeight);
   const recommendations = useRecommendationStore((s) => s.recommendations);
   const unit = useOnboardingStore((s) => s.answers.unitPref);
+  const checkIns = useWeeklyCheckInStore((s) => s.checkIns);
 
   const summary = summarize(history);
   const weight = weightProgress(bodyWeights);
@@ -33,6 +43,11 @@ export default function ProgressScreen() {
     <ScreenContainer scroll>
       <Text style={typography.h1}>Progress</Text>
       <Text style={[typography.body, styles.message]}>{weeklyMessage(summary.totalWorkouts)}</Text>
+
+      <WeeklyCheckInCard
+        latest={latestCheckIn(checkIns)}
+        onStart={() => navigation.navigate('WeeklyCheckIn')}
+      />
 
       {noWorkouts ? (
         <View style={styles.emptyCard}>

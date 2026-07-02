@@ -43,7 +43,7 @@
 - [ ] **B-19** Progress photos (M) — capture/upload to private bucket, signed URLs, grid. *Success: photo uploads, only owner can view.*
 
 ## Epic F — Check-in & Library & Settings (P1)
-- [ ] **B-20** Weekly check-in flow (M) — due detection, form, runs R5–R7, shows trainer message + unlock. *Success: check-in writes row + recommendation.*
+- [x] **B-20** Weekly check-in flow (M) — ✅ Loop 12 (user-sequence "B-12"). Persisted local check-in (workouts/energy/soreness/confidence/barriers/goal), rule-based coaching message, prompt + latest-summary card on Today + Progress. Maps to `weekly_checkins`. Pure logic tested. (Plan-modifying R5/R7 + due-detection deferred.)
 - [x] **B-21** Exercise library screen (S) — ✅ Loop 11 (user-sequence "B-11"). List + search + filters (upper/lower/cardio/core/beginner-safe) + detail (setup/form/mistakes/safety/guidance/alternative). Catalog extended with primaryMuscles/commonMistakes/safetyNote. Pure filter logic tested.
 - [ ] **B-22** Settings/profile (S) — edit profile, prefs, update injuries (re-plan), restart plan, disclaimer, sign out. *Success: injury update regenerates safe plan.*
 

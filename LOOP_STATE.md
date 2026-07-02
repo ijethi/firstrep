@@ -7,11 +7,25 @@
 ---
 
 ## Current loop
-- **Loop #:** 11 — **B-11 Exercise Library build-out**
-- **Goal of this loop:** Real Exercise Library over the catalog: list, search, filters, detail view (setup/form/mistakes/safety/alternative). Local only; catalog is single source of truth.
-- **Success condition:** Library lists all catalog machines; search + filters work (incl. empty/no-results); detail shows setup/form/mistakes/safety; placeholders render; typecheck + filter/search assertions pass.
-- **Ceiling:** Max 3 fix attempts. (Used: 0 code fixes — one wrong test expectation corrected, code unchanged.)
-- **Status:** ✅ Complete — awaiting approval for B-12.
+- **Loop #:** 12 — **B-12 Weekly check-in**
+- **Goal of this loop:** Local persisted weekly check-in: short coaching form, rule-based message, prompt/summary card on Today + Progress. No plan changes. Local only.
+- **Success condition:** Open from Today/Progress; answer all questions; saves + persists; Progress shows latest summary; rule-based message; empty state; typecheck + check-in assertions pass.
+- **Ceiling:** Max 3 fix attempts. (Used: 0 — passed on first checker pass.)
+- **Status:** ✅ Complete — awaiting approval for B-13.
+
+### Loop 12 verification (maker-checker — typecheck + 13 executed assertions)
+| Gate | Result |
+|------|--------|
+| `npx tsc --noEmit` | ✅ PASSED |
+| Persisted store (same B-10 pattern) | ✅ weeklyCheckInStore persist + key + hydration + reset |
+| All 6 questions present | ✅ workouts/energy/soreness/confidence/barriers/small goal |
+| Rule-based message (req 9) | ✅ 0 / 1–2 / 3+ + high-soreness + low-confidence (asserted) |
+| Open from Today AND Progress | ✅ WeeklyCheckInCard on both → WeeklyCheckIn route |
+| Latest summary on Progress | ✅ card shows latest + coaching |
+| Empty state / partial data | ✅ `latestCheckIn([])`→null prompt; Save gated until required answered |
+| Maps to `weekly_checkins` | ✅ `toWeeklyCheckinRow` categorical→1–5 ints (asserted) |
+| No plan modification (req 10) | ✅ |
+| No backend/Supabase/auth/AI/nutrition/analytics/wearable | ✅ |
 
 ### Loop 11 verification (maker-checker — typecheck + executed assertions)
 | Gate | Result |
@@ -290,6 +304,18 @@
 - REMOVED `src/screens/LibraryScreen.tsx` (placeholder superseded)
 - NOTE: `components/ExerciseCard.tsx` now unused by screens; kept as generic reusable component
 
+### B-12 files created / changed
+- NEW `src/state/weeklyCheckInStore.ts` — persisted check-ins store
+- NEW `src/lib/weeklyCheckIn.ts` — PURE messages / latestCheckIn / DB-row mapping / labels
+- NEW `src/screens/WeeklyCheckInScreen.tsx` — form (reuses onboarding ChoiceGroup/MultiChoiceGroup)
+- NEW `src/components/WeeklyCheckInCard.tsx` — prompt + latest-summary card
+- NEW `docs/WEEKLY_CHECKIN_REVIEW.md`
+- CHANGED `src/types/database.ts` — WeeklyCheckInEntry + enums
+- CHANGED `src/lib/persistConfig.ts` — added `weeklyCheckIn` storage key
+- CHANGED `src/lib/useHydration.ts` + `src/lib/resetAppData.ts` — include weekly check-in store
+- CHANGED `src/navigation/{types.ts,RootNavigator.tsx}` — WeeklyCheckIn route
+- CHANGED `src/screens/{TodayScreen,ProgressScreen}.tsx` — check-in card + open route
+
 ### B-02 files created
 - `supabase/migrations/001_initial_schema.sql` — 15 tables, FKs, 19 indexes, RLS (15 policies), updated_at trigger
 - `supabase/seed.sql` — 12 PF beginner machines, placeholder image keys, alt_exercise_id links, idempotent
@@ -305,14 +331,14 @@
 - Screens: `src/screens/{Onboarding,Today,WorkoutGuide,Progress,Library,Settings}Screen.tsx`
 
 ## Reprioritized sequence (per D12 — auth moved late)
-Onboarding ✅ → Plan generation ✅ → Today ✅ → Workout overview ✅ → Guided session + set logging ✅ → Trainer recommendations ✅ → Progress dashboard ✅ → Adaptive next-workout ✅ → Multi-day navigation/progression ✅ → Local persistence ✅ → Exercise Library ✅ → **next: B-12 (TBD)** → *then* Auth + Supabase sync.
+Onboarding ✅ → Plan generation ✅ → Today ✅ → Workout overview ✅ → Guided session + set logging ✅ → Trainer recommendations ✅ → Progress dashboard ✅ → Adaptive next-workout ✅ → Multi-day navigation/progression ✅ → Local persistence ✅ → Exercise Library ✅ → Weekly check-in ✅ → **next: B-13 (TBD)** → *then* Auth + Supabase sync.
 
-## Next task (single, after approval) — user to choose B-12
+## Next task (single, after approval) — user to choose B-13
 > Per the loop rule: pick ONE item from FEATURE_BACKLOG.md, write a mini-spec, build, check, update this file, STOP.
-- **Candidate A:** Weekly check-in flow (B-20) — weight/energy/soreness entry + week summary (local).
-- **Candidate B:** Settings/profile build-out (B-22) — edit profile, update injuries → regenerate safe plan, restart plan, unit toggle. Also link Library detail from the live machine guide.
-- **Candidate C:** Begin Auth + Supabase sync (deferred D12) — first real backend wiring.
-- Awaiting user direction on B-12 scope.
+- **Candidate A:** Settings/profile build-out (B-22) — edit profile, update injuries → regenerate safe plan, restart plan, unit toggle; link the live machine guide to Library detail.
+- **Candidate B:** Body measurements + progress photos (local) — finish B-17/B-19 (measurements logging, photo capture to local) without backend.
+- **Candidate C:** Begin Auth + Supabase sync (deferred D12) — first real backend wiring + offline-tolerant logging (B-23).
+- Awaiting user direction on B-13 scope.
 
 ## Decisions log
 | # | Decision | Rationale | Date |

@@ -11,6 +11,7 @@ import TodayScreen from '../screens/TodayScreen';
 import ProgressScreen from '../screens/ProgressScreen';
 import ExerciseLibraryScreen from '../screens/ExerciseLibraryScreen';
 import ExerciseDetailScreen from '../screens/ExerciseDetailScreen';
+import WeeklyCheckInScreen from '../screens/WeeklyCheckInScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import WorkoutGuideScreen from '../screens/WorkoutGuideScreen';
 import SessionSummaryScreen from '../screens/SessionSummaryScreen';
@@ -84,6 +85,11 @@ export default function RootNavigator() {
           name="ExerciseDetail"
           component={ExerciseDetailScreen}
           options={{ title: 'Machine guide' }}
+        />
+        <Stack.Screen
+          name="WeeklyCheckIn"
+          component={WeeklyCheckInScreen}
+          options={{ title: 'Weekly check-in' }}
         />
       </Stack.Navigator>
     </NavigationContainer>
