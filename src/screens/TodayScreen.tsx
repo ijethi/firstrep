@@ -9,7 +9,7 @@ import WeeklyCheckInCard from '../components/WeeklyCheckInCard';
 import { colors, radius, spacing, typography } from '../theme';
 import { RootStackParamList } from '../navigation/types';
 import { useOnboardingStore } from '../state/onboardingStore';
-import { usePlanStore } from '../state/planStore';
+import { getPlanDay, usePlanStore } from '../state/planStore';
 import { useWorkoutSessionStore } from '../state/workoutSessionStore';
 import { useProgressStore } from '../state/progressStore';
 import { useRecommendationStore } from '../state/recommendationStore';
@@ -19,6 +19,9 @@ import { dayIdOf, getPlanProgress } from '../lib/planProgress';
 import { generatePlan } from '../lib/planGenerator';
 import { useWeeklyCheckInStore } from '../state/weeklyCheckInStore';
 import { latestCheckIn } from '../lib/weeklyCheckIn';
+import ResumeWorkoutCard from '../components/ResumeWorkoutCard';
+import { resumeInfo } from '../lib/sessionRecovery';
+import { concludeSession } from '../lib/sessionActions';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -51,9 +54,15 @@ export default function TodayScreen() {
   const selectDay = usePlanProgressStore((s) => s.selectDay);
   const resetProgress = usePlanProgressStore((s) => s.reset);
   const checkIns = useWeeklyCheckInStore((s) => s.checkIns);
+  const session = useWorkoutSessionStore((s) => s.session);
+  const clearSession = useWorkoutSessionStore((s) => s.clear);
 
   const progress = getPlanProgress(plan, completedDayIds, selectedDayId);
   const day = progress.selectedDay;
+
+  // Recovery for an unfinished workout (B-15). resumeInfo is null unless in-progress.
+  const sessionPlanDay = session ? getPlanDay(plan, session.weekNumber, session.dayNumber) : null;
+  const rInfo = resumeInfo(session, sessionPlanDay);
 
   // Defensive: never crash if onboarding is incomplete or no plan exists yet.
   if (!completed || !plan || !day) {
@@ -78,6 +87,25 @@ export default function TodayScreen() {
   return (
     <ScreenContainer scroll>
       <Text style={typography.h1}>Today</Text>
+
+      {/* Unfinished-workout recovery (B-15) */}
+      {rInfo ? (
+        <ResumeWorkoutCard
+          info={rInfo}
+          onContinue={() =>
+            session &&
+            navigation.navigate('WorkoutGuide', {
+              week: session.weekNumber,
+              dayNumber: session.dayNumber,
+            })
+          }
+          onEnd={() => {
+            concludeSession('abandoned');
+            navigation.navigate('SessionSummary');
+          }}
+          onDiscard={clearSession}
+        />
+      ) : null}
 
       {/* Plan-complete banner */}
       {progress.isPlanComplete ? (

@@ -18,7 +18,15 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 export default function SessionSummaryScreen() {
   const navigation = useNavigation<Nav>();
   const session = useWorkoutSessionStore((s) => s.session);
+  const clearSession = useWorkoutSessionStore((s) => s.clear);
   const recommendations = useRecommendationStore((s) => s.recommendations);
+
+  // Clear the (now terminal) live session on exit so it isn't detected as
+  // "in progress" after a reload (B-15).
+  const backToToday = () => {
+    clearSession();
+    navigation.navigate('Main');
+  };
   const plan = usePlanStore((s) => s.plan);
   const completedDayIds = usePlanProgressStore((s) => s.completedDayIds);
 
@@ -30,7 +38,7 @@ export default function SessionSummaryScreen() {
       <ScreenContainer scroll>
         <Text style={typography.h1}>All done</Text>
         <Text style={[typography.body, styles.muted]}>No session to summarize.</Text>
-        <AppButton label="Back to Today" onPress={() => navigation.navigate('Main')} />
+        <AppButton label="Back to Today" onPress={backToToday} />
       </ScreenContainer>
     );
   }
@@ -110,7 +118,7 @@ export default function SessionSummaryScreen() {
         </View>
       ) : null}
 
-      <AppButton label="Back to Today" onPress={() => navigation.navigate('Main')} />
+      <AppButton label="Back to Today" onPress={backToToday} />
     </ScreenContainer>
   );
 }

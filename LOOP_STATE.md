@@ -7,11 +7,28 @@
 ---
 
 ## Current loop
-- **Loop #:** 14 — **B-14 Local body measurements + progress photos**
-- **Goal of this loop:** Track waist/chest/hips (cm canonical) + local progress photos on Progress; latest + change; persisted; photos stay on device. Local only.
-- **Success condition:** Log waist/chest/hips; see latest + change; add local photo; latest photo or safe empty state; persists; typecheck + measurement/photo assertions pass.
-- **Ceiling:** Max 3 fix attempts. (Used: 0 — passed on first checker pass.)
-- **Status:** ✅ Complete — awaiting approval for B-15.
+- **Loop #:** 15 — **B-15 Resumable in-progress workout session**
+- **Goal of this loop:** Persist the live session safely; on reload offer Continue/End/Discard; resume at the right exercise/set; abandoned/discarded don't advance the plan; rest timer never auto-advances on stale time. Local only.
+- **Success condition:** Start creates recoverable session; reload detects it; Today shows resume card; resume at correct step; end/discard work; completed still saves; abandoned doesn't advance; reset clears it; typecheck + recovery assertions pass.
+- **Ceiling:** Max 3 fix attempts. (Used: 1 — duplicate `useWorkoutSessionStore` import in Today.)
+- **Status:** ✅ Complete — awaiting approval for B-16.
+
+### Loop 15 verification (maker-checker — typecheck + 22 executed assertions)
+| Gate | Result |
+|------|--------|
+| `npx tsc --noEmit` | ✅ PASSED (after 1 fix) |
+| Session persisted (partialize {session}) | ✅ + version/migrate; NO rest-timer state persisted |
+| Reload detects unfinished session | ✅ `isInProgress`; store in hydration gate |
+| Today resume prompt (Continue/End/Discard) | ✅ `ResumeWorkoutCard` |
+| Resume at right exercise/set | ✅ `resumeStepIndex` clamps; WorkoutGuide inits step from it |
+| Rest timer no stale auto-advance | ✅ `resting` transient, resets false on remount |
+| End → abandoned (not completed) | ✅ `concludeSession('abandoned')` |
+| Discard → clears live session only | ✅ `clearSession()`, no history/summary |
+| Completed still saves to history + advances plan | ✅ shared `concludeSession('completed')` |
+| Abandoned/discarded do NOT advance plan | ✅ markDayComplete only in completed branch (asserted) |
+| Corrupt/regenerated-plan session | ✅ conservative "couldn't safely resume" + Clear (asserted) |
+| Reset clears saved live session | ✅ resetAppData + storage key |
+| No backend/Supabase/auth/AI/nutrition/analytics/wearable/photo-upload | ✅ |
 
 ### Loop 14 verification (maker-checker — typecheck + 12 executed assertions)
 | Gate | Result |
@@ -368,6 +385,20 @@
 - CHANGED `app.json` — expo-image-picker plugin + iOS NSPhotoLibraryUsageDescription
 - CHANGED `package.json` — added `expo-image-picker`
 
+### B-15 files created / changed
+- NEW `src/lib/sessionRecovery.ts` — PURE isInProgress / isStructurallyValid / sessionMatchesPlanDay / canSafelyResume / resumeStepIndex / resumeInfo
+- NEW `src/lib/sessionActions.ts` — shared `concludeSession(status)` (finish + recs + history + conditional plan advance)
+- NEW `src/components/ResumeWorkoutCard.tsx` — Continue/End/Discard (+ corrupt-session state)
+- NEW `docs/SESSION_RECOVERY_REVIEW.md`
+- CHANGED `src/types/database.ts` — WorkoutSessionLocal.currentExerciseIndex
+- CHANGED `src/state/workoutSessionStore.ts` — persist + setCurrentExerciseIndex + currentExerciseIndex
+- CHANGED `src/lib/persistConfig.ts` — workoutSession storage key
+- CHANGED `src/lib/useHydration.ts` — wait for session store
+- CHANGED `src/screens/WorkoutGuideScreen.tsx` — resume at saved step, persist step, use concludeSession
+- CHANGED `src/screens/TodayScreen.tsx` — ResumeWorkoutCard + handlers
+- CHANGED `src/screens/SessionSummaryScreen.tsx` — clear live session on exit
+- NOTE: resetAppData already clears the session store + key (req 15)
+
 ### B-02 files created
 - `supabase/migrations/001_initial_schema.sql` — 15 tables, FKs, 19 indexes, RLS (15 policies), updated_at trigger
 - `supabase/seed.sql` — 12 PF beginner machines, placeholder image keys, alt_exercise_id links, idempotent
@@ -383,14 +414,14 @@
 - Screens: `src/screens/{Onboarding,Today,WorkoutGuide,Progress,Library,Settings}Screen.tsx`
 
 ## Reprioritized sequence (per D12 — auth moved late)
-Onboarding ✅ → Plan generation ✅ → Today ✅ → Workout overview ✅ → Guided session + set logging ✅ → Trainer recommendations ✅ → Progress dashboard ✅ → Adaptive next-workout ✅ → Multi-day navigation/progression ✅ → Local persistence ✅ → Exercise Library ✅ → Weekly check-in ✅ → Settings/profile + machine-guide link ✅ → Body measurements + photos ✅ → **next: B-15 (TBD)** → *then* Auth + Supabase sync.
+Onboarding ✅ → Plan generation ✅ → Today ✅ → Workout overview ✅ → Guided session + set logging ✅ → Trainer recommendations ✅ → Progress dashboard ✅ → Adaptive next-workout ✅ → Multi-day navigation/progression ✅ → Local persistence ✅ → Exercise Library ✅ → Weekly check-in ✅ → Settings/profile + machine-guide link ✅ → Body measurements + photos ✅ → Resumable session ✅ → **next: B-16 (TBD)** → *then* Auth + Supabase sync.
 
-## Next task (single, after approval) — user to choose B-15
+## Next task (single, after approval) — user to choose B-16
 > Per the loop rule: pick ONE item from FEATURE_BACKLOG.md, write a mini-spec, build, check, update this file, STOP.
-- **Candidate A:** Resumable in-progress session (safe recovery across reload) — persist the live session behind a "Resume your workout?" prompt (B-23 groundwork), still local.
-- **Candidate B:** Medical disclaimer + first-run intro/tips + small UX polish (rest-timer haptics/sound), local.
+- **Candidate A:** Safety/legal polish — medical disclaimer (one-time), first-run intro/tips, rest-timer haptics + optional sound; local.
+- **Candidate B:** Streak/weekly unlock + trainer R7 in-app (celebrate 3 workouts, soft week unlock messaging tied to progress); local.
 - **Candidate C:** Begin Auth + Supabase sync (deferred D12) — first real backend wiring + upload progress photos to private Storage.
-- Awaiting user direction on B-15 scope.
+- Awaiting user direction on B-16 scope.
 
 ## Decisions log
 | # | Decision | Rationale | Date |

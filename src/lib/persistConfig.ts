@@ -11,6 +11,7 @@ export const STORAGE_KEYS = {
   progress: 'firstrep:progress',
   recommendation: 'firstrep:recommendation',
   weeklyCheckIn: 'firstrep:weekly-checkin',
+  workoutSession: 'firstrep:workout-session',
 } as const;
 
 /** Bump when a persisted store's shape changes; add a branch in migratePersisted. */

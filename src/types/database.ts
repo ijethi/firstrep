@@ -280,6 +280,8 @@ export interface WorkoutSessionLocal {
   status: SessionStatusLocal;
   exercises: ExerciseLog[];
   cardio: CardioSessionLog | null;
+  /** Step the user is on (0..strength.length = cardio). Persisted for resume (B-15). */
+  currentExerciseIndex: number;
 }
 
 // ---- trainer recommendation output (local, B-06) -------------------------

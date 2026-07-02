@@ -49,7 +49,7 @@
 
 ## Epic G — Polish & connector prep (P1/P2)
 - [~] **B-10** Local persistence (user-sequence "B-10") — ✅ Loop 10. AsyncStorage + Zustand persist for onboarding/plan/planProgress/progress/recommendation; hydration gate (no flicker); version/migrate; `resetLocalAppData`. Live session intentionally not persisted. Offline write-queue/Supabase sync still in B-23.
-- [ ] **B-23** Resumable-session + offline-tolerant logging (M, P1) — queue writes, retry. *Success: log a set offline, syncs on reconnect.*
+- [~] **B-23** Resumable-session + offline-tolerant logging (M, P1) — ✅ resumable in-progress session done in Loop 15 (user-sequence "B-15"): persisted live session, Today Continue/End/Discard, resume at exact step, conservative corrupt-session handling, no stale-timer auto-advance. Offline write-queue/retry belongs to the Supabase sync loop.
 - [ ] **B-24** `TrainerProvider` interface + LLM stub (M, P2) — abstract rule vs llm; OpenAI stub behind flag. *Success: swap provider, UI unchanged, rules still fallback.*
 - [ ] **B-25** Wearable sync connector stub (M, P2) — Health/Fit import for weight & cardio (`source='wearable'`). *Success: imported row tagged source.*
 - [ ] **B-26** Nutrition review deep-link (S, P2) — R6 links to guidance/connector. *Success: tapping recommendation opens content.*

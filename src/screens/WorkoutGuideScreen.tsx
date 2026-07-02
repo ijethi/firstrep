@@ -14,10 +14,9 @@ import { getPlanDay, usePlanStore } from '../state/planStore';
 import { useWorkoutSessionStore } from '../state/workoutSessionStore';
 import { useRecommendationStore } from '../state/recommendationStore';
 import { useProgressStore } from '../state/progressStore';
-import { usePlanProgressStore } from '../state/planProgressStore';
-import { generateRecommendations } from '../lib/trainerEngine';
 import { applyRecommendations } from '../lib/recommendationApplicator';
-import { planDayId } from '../lib/planProgress';
+import { concludeSession } from '../lib/sessionActions';
+import { canSafelyResume, resumeStepIndex } from '../lib/sessionRecovery';
 
 type GuideRoute = RouteProp<RootStackParamList, 'WorkoutGuide'>;
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -46,14 +45,29 @@ export default function WorkoutGuideScreen() {
   const plan = usePlanStore((s) => s.plan);
   const planDay = getPlanDay(plan, week, dayNumber);
   const session = useWorkoutSessionStore((s) => s.session);
-  const { logSet, skipExercise, logCardio, skipCardio, finish } = useWorkoutSessionStore();
+  const { logSet, skipExercise, logCardio, skipCardio, setCurrentExerciseIndex } =
+    useWorkoutSessionStore();
   // Adaptive guidance is a VIEW over the base plan (B-08) — base plan untouched.
   const history = useProgressStore((s) => s.history);
   const priorRecs = useRecommendationStore((s) => s.recommendations);
 
-  // step 0..strength.length-1 = exercises; strength.length = cardio (if any)
-  const [step, setStep] = useState(0);
+  // step 0..strength.length-1 = exercises; strength.length = cardio (if any).
+  // On mount, resume at the saved step when the session safely matches this day.
+  const [step, setStepState] = useState(() =>
+    session && planDay && canSafelyResume(session, planDay) ? resumeStepIndex(session, planDay) : 0,
+  );
+  // Rest-timer state is transient and NEVER persisted (B-15 req 3/12) — starts
+  // false on (re)mount so a reload never auto-advances on stale time.
   const [resting, setResting] = useState(false);
+
+  // Persist step changes into the session so a reload resumes here.
+  const setStep = (updater: number | ((prev: number) => number)) => {
+    setStepState((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      setCurrentExerciseIndex(next);
+      return next;
+    });
+  };
 
   // Guard: no session/plan → don't crash, send the user back to Today.
   if (!session || !planDay) {
@@ -73,24 +87,10 @@ export default function WorkoutGuideScreen() {
   const totalSteps = strengthCount + (hasCardio ? 1 : 0);
   const onCardioStep = hasCardio && step === strengthCount;
 
-  // Finish: stamp the session, run the (pure) trainer engine, save recs, go to summary.
+  // Finish via the shared action (identical to the resume card's "End"): stamps
+  // status, runs the trainer engine, saves history, advances plan only if completed.
   const finishAndSummarize = (status: 'completed' | 'abandoned') => {
-    const now = new Date().toISOString();
-    const priorCompletedCount = useRecommendationStore.getState().completedCount;
-    finish(status, now);
-    const finished = useWorkoutSessionStore.getState().session;
-    const recs = generateRecommendations(finished, { nowISO: now, priorCompletedCount });
-    useRecommendationStore.getState().setRecommendations(recs);
-    if (finished) useProgressStore.getState().addSession(finished); // save to local history
-    if (status === 'completed') {
-      useRecommendationStore.getState().registerCompletion();
-      // Advance the plan ONLY for completed (not abandoned) sessions.
-      if (finished) {
-        usePlanProgressStore
-          .getState()
-          .markDayCompleted(planDayId(finished.weekNumber, finished.dayNumber));
-      }
-    }
+    concludeSession(status);
     navigation.replace('SessionSummary');
   };
 

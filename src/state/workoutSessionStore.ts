@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 import type {
   CardioIntensity,
@@ -9,13 +10,16 @@ import type {
   SetEffort,
   WorkoutSessionLocal,
 } from '../types/database';
+import { appJSONStorage } from '../lib/storage';
+import { migratePersisted, PERSIST_VERSION, STORAGE_KEYS } from '../lib/persistConfig';
 
 /**
- * Live workout session store (B-05) — LOCAL ONLY. No Supabase/auth/AI.
+ * Live workout session store (B-05; persisted for recovery in B-15) — LOCAL ONLY.
  *
- * Captures everything B-06's trainer logic will need (completed reps, weight,
- * effort, pain flag, skipped exercises, cardio minutes) without computing any
- * progression here. Maps to workout_sessions / exercise_sets / cardio_logs.
+ * Captures everything B-06's trainer logic needs (reps, weight, effort, pain,
+ * skips, cardio) + `currentExerciseIndex` for resume. Now PERSISTED so an
+ * in-progress workout survives a reload (recovery flow in lib/sessionRecovery.ts).
+ * Only durable session data is stored — NO transient rest-timer countdown.
  */
 interface WorkoutSessionState {
   session: WorkoutSessionLocal | null;
@@ -25,6 +29,7 @@ interface WorkoutSessionState {
   skipExercise: (exerciseIndex: number) => void;
   logCardio: (data: { completedMinutes: number | null; intensity: CardioIntensity | null }) => void;
   skipCardio: () => void;
+  setCurrentExerciseIndex: (index: number) => void;
   finish: (status: 'completed' | 'abandoned', nowISO: string) => void;
   clear: () => void;
 }
@@ -60,13 +65,16 @@ function buildSession(day: PlanDay, nowISO: string): WorkoutSessionLocal {
           skipped: false,
         }
       : null,
+    currentExerciseIndex: 0,
   };
 }
 
-export const useWorkoutSessionStore = create<WorkoutSessionState>((set) => ({
-  session: null,
+export const useWorkoutSessionStore = create<WorkoutSessionState>()(
+  persist(
+    (set) => ({
+      session: null,
 
-  startSession: (day, nowISO) => set({ session: buildSession(day, nowISO) }),
+      startSession: (day, nowISO) => set({ session: buildSession(day, nowISO) }),
 
   logSet: (exerciseIndex, partial) =>
     set((s) => {
@@ -118,14 +126,26 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>((set) => ({
       return { session: { ...s.session, cardio: { ...s.session.cardio, skipped: true } } };
     }),
 
+  setCurrentExerciseIndex: (index) =>
+    set((s) => (s.session ? { session: { ...s.session, currentExerciseIndex: index } } : s)),
+
   finish: (status, nowISO) =>
     set((s) => {
       if (!s.session) return s;
       return { session: { ...s.session, status, completedAtISO: nowISO } };
     }),
 
-  clear: () => set({ session: null }),
-}));
+      clear: () => set({ session: null }),
+    }),
+    {
+      name: STORAGE_KEYS.workoutSession,
+      storage: appJSONStorage,
+      version: PERSIST_VERSION,
+      migrate: (s, v) => migratePersisted(s, v),
+      partialize: (s) => ({ session: s.session }),
+    },
+  ),
+);
 
 /** Map the friendly UI effort to the DB `exercise_sets.effort` enum (for B-06 / persistence). */
 export function setEffortToDbEffort(effort: SetEffort | null): Effort | null {
