@@ -7,11 +7,27 @@
 ---
 
 ## Current loop
-- **Loop #:** 17 — **B-17 Supabase auth foundation + sync planning**
-- **Goal of this loop:** Supabase auth (sign up/in/out, session restore, best-effort profile upsert) while staying local-first; safe not-configured state; sync-order doc. NO data sync.
-- **Success condition:** runs with env missing (safe not-configured); sign up/in/out when configured; local data preserved on sign-in/out; profile upsert best-effort; Settings shows auth status; no secrets committed; typecheck + auth-config assertions pass.
+- **Loop #:** 18 — **B-18 Profile & onboarding sync only**
+- **Goal of this loop:** First cloud sync step — profile + onboarding answers only, local-wins, local-first. Manual "Sync profile" + status; safe when unconfigured/signed out. NO other data synced.
+- **Success condition:** signed-in user syncs profile+onboarding; safe/no-crash when unconfigured or signed out; Settings shows status + last synced; local data never erased on failure; only profile/onboarding synced; typecheck + sync assertions pass.
 - **Ceiling:** Max 3 fix attempts. (Used: 0 — passed on first checker pass.)
-- **Status:** ✅ Complete — awaiting approval for B-18.
+- **Status:** ✅ Complete — awaiting approval for B-19.
+
+### Loop 18 verification (maker-checker — typecheck + 11 executed assertions)
+| Gate | Result |
+|------|--------|
+| `npx tsc --noEmit` | ✅ PASSED |
+| Local-wins direction policy | ✅ local complete → push (even if remote exists); else pull; else noop (asserted) |
+| Remote→local mapping (`answersFromRemote`) | ✅ full fidelity + null/garbage/bad-type defenses (asserted) |
+| On sign-in/up triggers sync | ✅ `void syncProfile(user)` (non-blocking) |
+| Manual "Sync profile" + status + last synced | ✅ ProfileSyncCard in Settings |
+| Safe when unconfigured / signed out | ✅ status 'disabled', no crash |
+| **Local data never erased on failure** | ✅ syncProfile only reads local on push; error → status only |
+| Only profile + onboarding synced | ✅ users/user_profiles/onboarding_answers only |
+| `onboarding_answers` no-unique handled | ✅ delete-by-user then insert (remote-only), documented |
+| Persistence (last synced) + reset | ✅ profileSyncStore persist + hydration + reset |
+| No secrets committed | ✅ `.env` ignored |
+| No sessions/sets/cardio/weights/measurements/photos/recs/check-ins/AI/nutrition/analytics | ✅ |
 
 ### Loop 17 verification (maker-checker — typecheck + 13 executed assertions)
 | Gate | Result |
@@ -459,6 +475,17 @@
 - CHANGED `package.json` — added `@supabase/supabase-js`, `react-native-url-polyfill`
 - NOTE: DECISION — commit author is now the user (`ijethi`), no Claude co-author trailer (per user request)
 
+### B-18 files created / changed
+- NEW `src/lib/profileSyncCore.ts` — PURE decideSyncDirection (local-wins) + answersFromRemote
+- NEW `src/lib/profileSync.ts` — syncProfile(user): push/pull profile+onboarding only; never erases local
+- NEW `src/state/profileSyncStore.ts` — status + persisted lastSyncedAtISO
+- NEW `src/components/ProfileSyncCard.tsx`, `docs/PROFILE_ONBOARDING_SYNC_REVIEW.md`
+- CHANGED `src/state/onboardingStore.ts` — `importAnswers` (pull path)
+- CHANGED `src/state/authStore.ts` — sign-in/up trigger `syncProfile` (removed B-17 upsertProfile)
+- CHANGED `src/screens/SettingsScreen.tsx` — ProfileSyncCard
+- CHANGED `src/lib/persistConfig.ts` (profileSync key), `useHydration.ts`, `resetAppData.ts`
+- NOTE: `onboarding_answers` has no unique(user_id) → push does delete-by-user then insert (remote-only)
+
 ### B-02 files created
 - `supabase/migrations/001_initial_schema.sql` — 15 tables, FKs, 19 indexes, RLS (15 policies), updated_at trigger
 - `supabase/seed.sql` — 12 PF beginner machines, placeholder image keys, alt_exercise_id links, idempotent
@@ -474,13 +501,13 @@
 - Screens: `src/screens/{Onboarding,Today,WorkoutGuide,Progress,Library,Settings}Screen.tsx`
 
 ## Reprioritized sequence (per D12 — auth moved late)
-… → Body measurements + photos ✅ → Resumable session ✅ → Safety polish ✅ → **Supabase auth foundation ✅** → **next: B-18 = first data sync (profile & onboarding), per SYNC_PLAN.md**.
+… → Resumable session ✅ → Safety polish ✅ → Supabase auth foundation ✅ → Profile & onboarding sync ✅ → **next: B-19 (SYNC_PLAN step 2)**.
 
-## Next task (single, after approval) — B-18
+## Next task (single, after approval) — B-19
 > Per the loop rule: pick ONE item from FEATURE_BACKLOG.md, write a mini-spec, build, check, update this file, STOP.
-- **Proposed next (SYNC_PLAN step 1):** Sync **profile & onboarding** — push `user_profiles`/`onboarding_answers` on sign-in and pull them back on a new device; conflict = last-write-wins; still local-first (works offline / unconfigured).
+- **Proposed next (SYNC_PLAN step 2):** Sync the **generated plan** (`workout_plans`/`workout_days`/`workout_exercises`) — push local plan on sign-in, pull on a new device; local-wins; still local-first. (Plan progress = step 3, later.)
 - Alternatives: streak/weekly-unlock (local), or in-session coach tips (local).
-- Awaiting user direction on B-18 scope.
+- Awaiting user direction on B-19 scope.
 
 ## Decisions (append)
 - D14 (2026-06-29): Git commits are authored as the user (`ijethi <Ijethi7@gmail.com>`), no Claude co-author trailer, per explicit user request. Earlier commits (B-01…B-16) were authored "FirstRep Dev" + Claude trailer — offer to rewrite author before the user pushes (nothing is pushed yet).

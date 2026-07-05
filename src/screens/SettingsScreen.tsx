@@ -7,6 +7,7 @@ import { AppButton, ScreenContainer } from '../components';
 import SettingsSection, { SettingRow } from '../components/SettingsSection';
 import UnitToggle from '../components/UnitToggle';
 import AuthStatusCard from '../components/AuthStatusCard';
+import ProfileSyncCard from '../components/ProfileSyncCard';
 import { ChoiceGroup, MultiChoiceGroup } from '../components/onboarding';
 import type { ChoiceOption } from '../components/onboarding';
 import { colors, spacing, typography } from '../theme';
@@ -167,6 +168,7 @@ export default function SettingsScreen() {
       ) : null}
 
       <AuthStatusCard onSignIn={() => navigation.navigate('SignIn')} />
+      <ProfileSyncCard />
 
       <SettingsSection title="Safety tips">
         {SAFETY_TIPS.map((tip, i) => (

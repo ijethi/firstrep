@@ -54,6 +54,8 @@ interface OnboardingState {
   completed: boolean;
   setAnswer: <K extends keyof OnboardingAnswers>(key: K, value: OnboardingAnswers[K]) => void;
   complete: () => void;
+  /** Replace local answers/completed wholesale (used by the profile PULL sync, B-18). */
+  importAnswers: (answers: OnboardingAnswers, completed: boolean) => void;
   reset: () => void;
 }
 
@@ -64,6 +66,7 @@ export const useOnboardingStore = create<OnboardingState>()(
       completed: false,
       setAnswer: (key, value) => set((s) => ({ answers: { ...s.answers, [key]: value } })),
       complete: () => set({ completed: true }),
+      importAnswers: (answers, completed) => set({ answers: { ...answers }, completed }),
       reset: () => set({ answers: { ...EMPTY }, completed: false }),
     }),
     {

@@ -13,6 +13,7 @@ export const STORAGE_KEYS = {
   weeklyCheckIn: 'firstrep:weekly-checkin',
   workoutSession: 'firstrep:workout-session',
   safety: 'firstrep:safety',
+  profileSync: 'firstrep:profile-sync',
 } as const;
 
 /** Bump when a persisted store's shape changes; add a branch in migratePersisted. */

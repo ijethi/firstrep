@@ -4,8 +4,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { deriveAuthStatus, isSupabaseConfigured } from '../lib/supabaseConfig';
 import type { AuthStatus } from '../lib/supabaseConfig';
-import { useOnboardingStore } from './onboardingStore';
-import { toUserProfile } from './onboardingStore';
+import { syncProfile } from '../lib/profileSync';
 
 /**
  * Auth store (B-17) — Supabase auth foundation ONLY. Not persisted here; the
@@ -26,22 +25,6 @@ interface AuthState {
 }
 
 const NOT_CONFIGURED = 'Cloud sync isn’t set up on this build yet. Your data stays on this device.';
-
-/** Best-effort remote profile upsert (req 12). Never throws; local-first. */
-async function upsertProfile(user: User): Promise<void> {
-  if (!supabase) return;
-  try {
-    await supabase.from('users').upsert({ id: user.id, email: user.email ?? null });
-    const { answers, completed } = useOnboardingStore.getState();
-    if (completed) {
-      await supabase
-        .from('user_profiles')
-        .upsert({ user_id: user.id, ...toUserProfile(answers) }, { onConflict: 'user_id' });
-    }
-  } catch {
-    // Non-fatal: the app remains fully usable from local data.
-  }
-}
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
@@ -75,7 +58,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!supabase) return { error: NOT_CONFIGURED };
     set({ loading: true });
     const { data, error } = await supabase.auth.signUp({ email, password });
-    if (!error && data.user) await upsertProfile(data.user);
+    if (!error && data.user) void syncProfile(data.user); // profile+onboarding sync (B-18)
     set({ loading: false });
     return { error: error?.message ?? null };
   },
@@ -84,7 +67,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!supabase) return { error: NOT_CONFIGURED };
     set({ loading: true });
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (!error && data.user) await upsertProfile(data.user);
+    if (!error && data.user) void syncProfile(data.user); // profile+onboarding sync (B-18)
     set({ loading: false });
     return { error: error?.message ?? null };
   },
