@@ -15,7 +15,7 @@
 ## Epic A — Foundation (P0)
 - [ ] **B-01** Project scaffold (S) — Expo app boots, bottom-tab navigation shell (Today/Progress/Library/Profile), design tokens (colors, spacing, type), big-button component. *Success: app runs on Expo Go, 4 empty tab screens render.*
 - [ ] **B-02** Supabase project + schema migration (M) — create project, run SQL for all 15 tables + RLS + indexes. *Success: tables exist, RLS on, can't read another user's rows.*
-- [~] **B-03** Auth flow (M) — **DEFERRED (D12)** until after onboarding + plan-gen + Today + workout guide + set logging. email magic-link/OTP sign-up + sign-in, session persistence, `users`/`user_profiles` row bootstrap. *Success: sign in, refresh app, still logged in.*
+- [x] **B-03** Auth flow (M) — ✅ Loop 17 (user-sequence "B-17"). Supabase email+password sign up/in/out, session restore, best-effort `users`/`user_profiles` upsert, Settings auth card. Local-first (safe when unconfigured). Data sync deferred to SYNC_PLAN.md loops.
 - [x] **B-04** Exercise catalog seed (M) — ✅ delivered as SQL files in Loop 2 (`supabase/seed.sql`, 12 machines, idempotent). DB load deferred until provisioning.
 
 ## Epic B — Onboarding & Planning (P0)

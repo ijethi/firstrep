@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import RootNavigator from './navigation/RootNavigator';
 import { useAppHydrated } from './lib/useHydration';
+import { useAuthStore } from './state/authStore';
 import { colors, spacing, typography } from './theme';
 
 function LoadingScreen() {
@@ -18,6 +19,11 @@ function LoadingScreen() {
 
 export default function App() {
   const hydrated = useAppHydrated();
+
+  // Restore any existing Supabase session (no-op when Supabase isn't configured).
+  useEffect(() => {
+    useAuthStore.getState().initialize();
+  }, []);
 
   return (
     <SafeAreaProvider>

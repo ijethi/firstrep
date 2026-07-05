@@ -12,6 +12,8 @@ import ProgressScreen from '../screens/ProgressScreen';
 import ExerciseLibraryScreen from '../screens/ExerciseLibraryScreen';
 import ExerciseDetailScreen from '../screens/ExerciseDetailScreen';
 import WeeklyCheckInScreen from '../screens/WeeklyCheckInScreen';
+import SignInScreen from '../screens/SignInScreen';
+import SignUpScreen from '../screens/SignUpScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import WorkoutGuideScreen from '../screens/WorkoutGuideScreen';
 import SessionSummaryScreen from '../screens/SessionSummaryScreen';
@@ -100,6 +102,8 @@ export default function RootNavigator() {
           component={WeeklyCheckInScreen}
           options={{ title: 'Weekly check-in' }}
         />
+        <Stack.Screen name="SignIn" component={SignInScreen} options={{ title: 'Sign in' }} />
+        <Stack.Screen name="SignUp" component={SignUpScreen} options={{ title: 'Create account' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

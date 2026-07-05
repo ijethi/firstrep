@@ -7,4 +7,6 @@ export type RootStackParamList = {
   SessionSummary: undefined;
   ExerciseDetail: { slug: string };
   WeeklyCheckIn: undefined;
+  SignIn: undefined;
+  SignUp: undefined;
 };

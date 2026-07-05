@@ -6,6 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppButton, ScreenContainer } from '../components';
 import SettingsSection, { SettingRow } from '../components/SettingsSection';
 import UnitToggle from '../components/UnitToggle';
+import AuthStatusCard from '../components/AuthStatusCard';
 import { ChoiceGroup, MultiChoiceGroup } from '../components/onboarding';
 import type { ChoiceOption } from '../components/onboarding';
 import { colors, spacing, typography } from '../theme';
@@ -164,6 +165,8 @@ export default function SettingsScreen() {
       {decision.regenerate ? (
         <AppButton label="Save workout changes" onPress={onSavePrefs} />
       ) : null}
+
+      <AuthStatusCard onSignIn={() => navigation.navigate('SignIn')} />
 
       <SettingsSection title="Safety tips">
         {SAFETY_TIPS.map((tip, i) => (

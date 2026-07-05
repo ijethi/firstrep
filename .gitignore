@@ -18,6 +18,11 @@ expo-env.d.ts
 # metro
 .metro-health-check*
 
+# secrets / env (never commit real keys; .env.example is committed)
+.env
+.env.local
+.env*.local
+
 # os / editor
 .DS_Store
 *.log

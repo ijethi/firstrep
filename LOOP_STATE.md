@@ -7,11 +7,28 @@
 ---
 
 ## Current loop
-- **Loop #:** 16 — **B-16 Safety disclaimer + first-run intro + rest-timer polish**
-- **Goal of this loop:** One-time safety disclaimer (persisted), start-light reminder, clearer pain copy, polished rest timer (Restart/+15s/Skip + haptic, safe reload), Settings safety tips. Local only.
-- **Success condition:** Acknowledge disclaimer once + persists; reset clears it; start reminder; clearer pain copy; polished rest timer w/ safe reload; Settings safety tips; typecheck + safety/rest assertions pass.
+- **Loop #:** 17 — **B-17 Supabase auth foundation + sync planning**
+- **Goal of this loop:** Supabase auth (sign up/in/out, session restore, best-effort profile upsert) while staying local-first; safe not-configured state; sync-order doc. NO data sync.
+- **Success condition:** runs with env missing (safe not-configured); sign up/in/out when configured; local data preserved on sign-in/out; profile upsert best-effort; Settings shows auth status; no secrets committed; typecheck + auth-config assertions pass.
 - **Ceiling:** Max 3 fix attempts. (Used: 0 — passed on first checker pass.)
-- **Status:** ✅ Complete — awaiting approval for B-17.
+- **Status:** ✅ Complete — awaiting approval for B-18.
+
+### Loop 17 verification (maker-checker — typecheck + 13 executed assertions)
+| Gate | Result |
+|------|--------|
+| `npx expo install @supabase/supabase-js react-native-url-polyfill` | ✅ 2.110.0 / 3.0.0 |
+| `npx tsc --noEmit` | ✅ PASSED |
+| Missing env → safe not-configured (no crash) | ✅ client null; status 'unconfigured'; guarded actions (asserted) |
+| Sign up / in / out wired (email+password) | ✅ authStore + SignIn/SignUp screens |
+| Session restore on launch | ✅ App.initialize(); onAuthStateChange subscription |
+| **Local data preserved on sign-in/out** | ✅ authStore never touches local stores; only Reset wipes |
+| Profile upsert best-effort (non-destructive) | ✅ try/catch users + user_profiles (only if configured + onboarded) |
+| Settings shows auth status | ✅ AuthStatusCard |
+| No secrets committed | ✅ `.env` gitignored (verified); `.env.example` placeholders only |
+| Local-first copy | ✅ LOCAL_FIRST_MESSAGE on screens + card |
+| No data sync of sessions/sets/photos/etc | ✅ (SYNC_PLAN.md defines future order) |
+| Schema `users` naming risk | ✅ documented, non-destructive proposal deferred |
+| No AI/nutrition/analytics/wearable/photo-upload | ✅ |
 
 ### Loop 16 verification (maker-checker — typecheck + 17 executed assertions)
 | Gate | Result |
@@ -429,6 +446,19 @@
 - CHANGED `src/lib/persistConfig.ts` (safety key), `src/lib/useHydration.ts`, `src/lib/resetAppData.ts`
 - CHANGED `package.json` — added `expo-haptics`
 
+### B-17 files created / changed
+- NEW `src/lib/supabaseConfig.ts` — PURE hasSupabaseConfig / deriveAuthStatus / LOCAL_FIRST_MESSAGE / env-derived config
+- NEW `src/lib/supabase.ts` — client (null when unconfigured; AsyncStorage session)
+- NEW `src/state/authStore.ts` — user/session/loading/status + initialize/signUp/signIn/signOut + best-effort profile upsert
+- NEW `src/components/AuthStatusCard.tsx`, `src/screens/{SignInScreen,SignUpScreen}.tsx`
+- NEW `.env.example`; `.gitignore` now ignores `.env*`
+- NEW `docs/SUPABASE_AUTH_REVIEW.md`, `docs/SYNC_PLAN.md`
+- CHANGED `src/App.tsx` — auth initialize() on launch
+- CHANGED `src/navigation/{types.ts,RootNavigator.tsx}` — SignIn/SignUp routes
+- CHANGED `src/screens/SettingsScreen.tsx` — AuthStatusCard (sign in/out)
+- CHANGED `package.json` — added `@supabase/supabase-js`, `react-native-url-polyfill`
+- NOTE: DECISION — commit author is now the user (`ijethi`), no Claude co-author trailer (per user request)
+
 ### B-02 files created
 - `supabase/migrations/001_initial_schema.sql` — 15 tables, FKs, 19 indexes, RLS (15 policies), updated_at trigger
 - `supabase/seed.sql` — 12 PF beginner machines, placeholder image keys, alt_exercise_id links, idempotent
@@ -444,14 +474,16 @@
 - Screens: `src/screens/{Onboarding,Today,WorkoutGuide,Progress,Library,Settings}Screen.tsx`
 
 ## Reprioritized sequence (per D12 — auth moved late)
-Onboarding ✅ → Plan generation ✅ → Today ✅ → Workout overview ✅ → Guided session + set logging ✅ → Trainer recommendations ✅ → Progress dashboard ✅ → Adaptive next-workout ✅ → Multi-day navigation/progression ✅ → Local persistence ✅ → Exercise Library ✅ → Weekly check-in ✅ → Settings/profile + machine-guide link ✅ → Body measurements + photos ✅ → Resumable session ✅ → Safety polish ✅ → **next: B-17 (TBD)** → *then* Auth + Supabase sync.
+… → Body measurements + photos ✅ → Resumable session ✅ → Safety polish ✅ → **Supabase auth foundation ✅** → **next: B-18 = first data sync (profile & onboarding), per SYNC_PLAN.md**.
 
-## Next task (single, after approval) — user to choose B-17
+## Next task (single, after approval) — B-18
 > Per the loop rule: pick ONE item from FEATURE_BACKLOG.md, write a mini-spec, build, check, update this file, STOP.
-- **Candidate A:** Streak/weekly unlock + trainer R7 in-app — celebrate 3 workouts/week, soft week-unlock messaging tied to progress; local.
-- **Candidate B:** First-run coach tips inside the session (per-step beginner nudges) + empty-state polish; local.
-- **Candidate C:** Begin Auth + Supabase sync (deferred D12) — first real backend wiring + upload progress photos to private Storage.
-- Awaiting user direction on B-17 scope.
+- **Proposed next (SYNC_PLAN step 1):** Sync **profile & onboarding** — push `user_profiles`/`onboarding_answers` on sign-in and pull them back on a new device; conflict = last-write-wins; still local-first (works offline / unconfigured).
+- Alternatives: streak/weekly-unlock (local), or in-session coach tips (local).
+- Awaiting user direction on B-18 scope.
+
+## Decisions (append)
+- D14 (2026-06-29): Git commits are authored as the user (`ijethi <Ijethi7@gmail.com>`), no Claude co-author trailer, per explicit user request. Earlier commits (B-01…B-16) were authored "FirstRep Dev" + Claude trailer — offer to rewrite author before the user pushes (nothing is pushed yet).
 
 ## Decisions log
 | # | Decision | Rationale | Date |
