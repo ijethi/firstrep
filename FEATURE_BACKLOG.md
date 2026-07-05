@@ -48,6 +48,7 @@
 - [~] **B-22** Settings/profile (S) — ✅ core in Loop 13 (user-sequence "B-13"). Profile summary + editable units/days/duration/injuries, confirmed plan regeneration (history preserved), machine-guide→Exercise Detail link, Reset Local Data. Medical disclaimer + sign out (auth) still TODO.
 
 ## Epic G — Polish & connector prep (P1/P2)
+- [x] **B-16** Safety disclaimer + first-run intro + rest-timer polish (user-sequence "B-16") — ✅ Loop 16. One-time persisted disclaimer + SafetyIntro, start-light reminder, clearer sharp-pain copy, RestTimer (Restart/+15s/Skip + haptics, safe reload), Settings Safety Tips, reset clears acknowledgment. Pure copy/routing/timer helpers tested.
 - [~] **B-10** Local persistence (user-sequence "B-10") — ✅ Loop 10. AsyncStorage + Zustand persist for onboarding/plan/planProgress/progress/recommendation; hydration gate (no flicker); version/migrate; `resetLocalAppData`. Live session intentionally not persisted. Offline write-queue/Supabase sync still in B-23.
 - [~] **B-23** Resumable-session + offline-tolerant logging (M, P1) — ✅ resumable in-progress session done in Loop 15 (user-sequence "B-15"): persisted live session, Today Continue/End/Discard, resume at exact step, conservative corrupt-session handling, no stale-timer auto-advance. Offline write-queue/retry belongs to the Supabase sync loop.
 - [ ] **B-24** `TrainerProvider` interface + LLM stub (M, P2) — abstract rule vs llm; OpenAI stub behind flag. *Success: swap provider, UI unchanged, rules still fallback.*

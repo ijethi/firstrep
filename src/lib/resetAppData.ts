@@ -6,6 +6,7 @@ import { useProgressStore } from '../state/progressStore';
 import { useRecommendationStore } from '../state/recommendationStore';
 import { useWeeklyCheckInStore } from '../state/weeklyCheckInStore';
 import { useWorkoutSessionStore } from '../state/workoutSessionStore';
+import { useSafetyStore } from '../state/safetyStore';
 
 /**
  * Clears all locally persisted FirstRep data (dev/testing + Settings reset).
@@ -22,4 +23,5 @@ export async function resetLocalAppData(): Promise<void> {
   useRecommendationStore.setState({ recommendations: [], completedCount: 0 });
   useWeeklyCheckInStore.getState().clear();
   useWorkoutSessionStore.getState().clear();
+  useSafetyStore.getState().reset();
 }

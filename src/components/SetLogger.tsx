@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, typography } from '../theme';
 import { NumberField } from './onboarding';
 import AppButton from './AppButton';
+import { PAIN_HELP } from '../lib/safety';
 import type { SetEffort } from '../types/database';
 
 interface LoggedSetInput {
@@ -89,10 +90,11 @@ export default function SetLogger({ setNumber, totalSets, initialWeight, onSave 
         style={({ pressed }) => [styles.painRow, pain && styles.painActive, pressed && styles.pressed]}
       >
         <Text style={[styles.painText, pain && styles.painTextActive]}>
-          {pain ? '⚠️ I felt pain' : 'No pain'}
+          {pain ? '⚠️ I felt sharp pain' : 'No sharp pain'}
         </Text>
-        <Text style={styles.painHint}>{pain ? 'Tap to undo' : 'Tap if it hurt'}</Text>
+        <Text style={styles.painHint}>{pain ? 'Tap to undo' : 'Tap only for sharp pain'}</Text>
       </Pressable>
+      <Text style={styles.painHelp}>{PAIN_HELP}</Text>
 
       <AppButton label="Save set" onPress={save} disabled={!canSave} />
     </View>
@@ -138,4 +140,5 @@ const styles = StyleSheet.create({
   painText: { ...typography.body, color: colors.text, fontWeight: '600' },
   painTextActive: { color: colors.danger },
   painHint: { ...typography.caption, color: colors.textMuted },
+  painHelp: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs },
 });

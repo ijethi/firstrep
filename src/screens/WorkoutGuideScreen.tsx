@@ -17,6 +17,7 @@ import { useProgressStore } from '../state/progressStore';
 import { applyRecommendations } from '../lib/recommendationApplicator';
 import { concludeSession } from '../lib/sessionActions';
 import { canSafelyResume, resumeStepIndex } from '../lib/sessionRecovery';
+import { START_REMINDER } from '../lib/safety';
 
 type GuideRoute = RouteProp<RootStackParamList, 'WorkoutGuide'>;
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -169,6 +170,13 @@ export default function WorkoutGuideScreen() {
 
   return (
     <ScreenContainer scroll>
+      {/* One-time start reminder on the first step (B-16) */}
+      {step === 0 && exLog.sets.length === 0 ? (
+        <View style={styles.reminder}>
+          <Text style={styles.reminderText}>💡 {START_REMINDER}</Text>
+        </View>
+      ) : null}
+
       <ExerciseStepCard
         exercise={planEx}
         exerciseIndex={step}
@@ -240,4 +248,6 @@ const styles = StyleSheet.create({
   },
   painTitle: { ...typography.h3, color: colors.danger },
   painBody: { ...typography.body, color: colors.text },
+  reminder: { backgroundColor: '#E8F3F0', borderRadius: radius.md, padding: spacing.md },
+  reminderText: { ...typography.body, color: colors.primary, fontWeight: '600' },
 });

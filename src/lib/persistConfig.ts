@@ -12,6 +12,7 @@ export const STORAGE_KEYS = {
   recommendation: 'firstrep:recommendation',
   weeklyCheckIn: 'firstrep:weekly-checkin',
   workoutSession: 'firstrep:workout-session',
+  safety: 'firstrep:safety',
 } as const;
 
 /** Bump when a persisted store's shape changes; add a branch in migratePersisted. */

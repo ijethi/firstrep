@@ -15,7 +15,10 @@ import WeeklyCheckInScreen from '../screens/WeeklyCheckInScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import WorkoutGuideScreen from '../screens/WorkoutGuideScreen';
 import SessionSummaryScreen from '../screens/SessionSummaryScreen';
+import SafetyIntroScreen from '../screens/SafetyIntroScreen';
 import { useOnboardingStore } from '../state/onboardingStore';
+import { useSafetyStore } from '../state/safetyStore';
+import { initialRouteName } from '../lib/safety';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -60,11 +63,17 @@ function MainTabs() {
 
 export default function RootNavigator() {
   // Rendered only after hydration (see App), so this reflects persisted state:
-  // skip onboarding straight to Today when it was already completed.
+  // show the safety intro once, then skip onboarding if already completed.
   const onboardingComplete = useOnboardingStore((s) => s.completed);
+  const acknowledged = useSafetyStore((s) => s.acknowledged);
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName={onboardingComplete ? 'Main' : 'Onboarding'}>
+      <Stack.Navigator initialRouteName={initialRouteName(acknowledged, onboardingComplete)}>
+        <Stack.Screen
+          name="SafetyIntro"
+          component={SafetyIntroScreen}
+          options={{ headerShown: false }}
+        />
         <Stack.Screen
           name="Onboarding"
           component={OnboardingScreen}

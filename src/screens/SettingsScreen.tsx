@@ -18,6 +18,7 @@ import { usePlanProgressStore } from '../state/planProgressStore';
 import { generatePlan } from '../lib/planGenerator';
 import { decidePlanUpdate } from '../lib/settingsProfile';
 import { resetLocalAppData } from '../lib/resetAppData';
+import { DISCLAIMER_TEXT, SAFETY_TIPS } from '../lib/safety';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -99,7 +100,8 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: async () => {
             await resetLocalAppData();
-            navigation.reset({ index: 0, routes: [{ name: 'Onboarding' }] });
+            // Disclaimer was cleared too — send them back through the safety intro.
+            navigation.reset({ index: 0, routes: [{ name: 'SafetyIntro' }] });
           },
         },
       ],
@@ -163,6 +165,15 @@ export default function SettingsScreen() {
         <AppButton label="Save workout changes" onPress={onSavePrefs} />
       ) : null}
 
+      <SettingsSection title="Safety tips">
+        {SAFETY_TIPS.map((tip, i) => (
+          <Text key={i} style={styles.tip}>
+            • {tip}
+          </Text>
+        ))}
+        <Text style={styles.disclaimer}>{DISCLAIMER_TEXT}</Text>
+      </SettingsSection>
+
       <SettingsSection title="Local data">
         <Text style={styles.help}>
           Everything stays on this device. Resetting clears your plan and logs.
@@ -175,4 +186,6 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   help: { ...typography.caption, color: colors.textMuted },
+  tip: { ...typography.body, color: colors.text },
+  disclaimer: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs },
 });

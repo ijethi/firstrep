@@ -1,5 +1,6 @@
 /** Root stack route params. Kept separate from the navigator to avoid import cycles. */
 export type RootStackParamList = {
+  SafetyIntro: undefined;
   Onboarding: undefined;
   Main: undefined;
   WorkoutGuide: { week?: number; dayNumber?: number } | undefined;

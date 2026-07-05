@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
 
 import { colors, radius, spacing, typography } from '../theme';
 import AppButton from './AppButton';
+import { adjustSeconds, formatCountdown, initialRest } from '../lib/restTimer';
 
 interface Props {
   seconds: number;
@@ -11,9 +13,14 @@ interface Props {
   nextLabel?: string;
 }
 
-/** Counts down the rest between sets. ±15s, skip, and auto-advances at zero. */
+/**
+ * Counts down the rest between sets. Add 15s / Restart / Skip, and a gentle
+ * haptic when rest ends. Timer state is transient (never persisted), so a reload
+ * never auto-advances on stale time (B-15/B-16 req 10).
+ */
 export default function RestTimer({ seconds, onDone, onSkip, nextLabel }: Props) {
-  const [remaining, setRemaining] = useState(seconds > 0 ? seconds : 30);
+  const start = initialRest(seconds);
+  const [remaining, setRemaining] = useState(start);
   const doneRef = useRef(false);
 
   useEffect(() => {
@@ -23,6 +30,8 @@ export default function RestTimer({ seconds, onDone, onSkip, nextLabel }: Props)
           clearInterval(id);
           if (!doneRef.current) {
             doneRef.current = true;
+            // Gentle end-of-rest cue; ignore if unsupported (e.g. web).
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
             onDone();
           }
           return 0;
@@ -34,26 +43,27 @@ export default function RestTimer({ seconds, onDone, onSkip, nextLabel }: Props)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const mm = Math.floor(remaining / 60);
-  const ss = remaining % 60;
-  const display = `${mm}:${ss.toString().padStart(2, '0')}`;
+  const restart = () => {
+    doneRef.current = false;
+    setRemaining(start);
+  };
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Rest up</Text>
-      <Text style={styles.timer}>{display}</Text>
-      {nextLabel ? <Text style={styles.next}>Next: {nextLabel}</Text> : null}
+      <Text style={styles.title}>Catch your breath</Text>
+      <Text style={styles.timer}>{formatCountdown(remaining)}</Text>
+      <Text style={styles.sub}>{nextLabel ? `Next: ${nextLabel}` : 'Rest, then keep going.'}</Text>
 
       <View style={styles.row}>
         <View style={styles.flex}>
-          <AppButton
-            label="-15s"
-            variant="secondary"
-            onPress={() => setRemaining((r) => Math.max(0, r - 15))}
-          />
+          <AppButton label="Restart rest" variant="secondary" onPress={restart} />
         </View>
         <View style={styles.flex}>
-          <AppButton label="+15s" variant="secondary" onPress={() => setRemaining((r) => r + 15)} />
+          <AppButton
+            label="+15 sec"
+            variant="secondary"
+            onPress={() => setRemaining((r) => adjustSeconds(r, 15))}
+          />
         </View>
       </View>
 
@@ -72,7 +82,7 @@ const styles = StyleSheet.create({
   },
   title: { ...typography.h3, color: colors.textMuted },
   timer: { fontSize: 56, fontWeight: '800', color: colors.primary, lineHeight: 64 },
-  next: { ...typography.body, color: colors.textMuted },
+  sub: { ...typography.body, color: colors.textMuted },
   row: { flexDirection: 'row', gap: spacing.md, alignSelf: 'stretch' },
   flex: { flex: 1 },
 });

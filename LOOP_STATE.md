@@ -7,11 +7,27 @@
 ---
 
 ## Current loop
-- **Loop #:** 15 — **B-15 Resumable in-progress workout session**
-- **Goal of this loop:** Persist the live session safely; on reload offer Continue/End/Discard; resume at the right exercise/set; abandoned/discarded don't advance the plan; rest timer never auto-advances on stale time. Local only.
-- **Success condition:** Start creates recoverable session; reload detects it; Today shows resume card; resume at correct step; end/discard work; completed still saves; abandoned doesn't advance; reset clears it; typecheck + recovery assertions pass.
-- **Ceiling:** Max 3 fix attempts. (Used: 1 — duplicate `useWorkoutSessionStore` import in Today.)
-- **Status:** ✅ Complete — awaiting approval for B-16.
+- **Loop #:** 16 — **B-16 Safety disclaimer + first-run intro + rest-timer polish**
+- **Goal of this loop:** One-time safety disclaimer (persisted), start-light reminder, clearer pain copy, polished rest timer (Restart/+15s/Skip + haptic, safe reload), Settings safety tips. Local only.
+- **Success condition:** Acknowledge disclaimer once + persists; reset clears it; start reminder; clearer pain copy; polished rest timer w/ safe reload; Settings safety tips; typecheck + safety/rest assertions pass.
+- **Ceiling:** Max 3 fix attempts. (Used: 0 — passed on first checker pass.)
+- **Status:** ✅ Complete — awaiting approval for B-17.
+
+### Loop 16 verification (maker-checker — typecheck + 17 executed assertions)
+| Gate | Result |
+|------|--------|
+| `npx expo install expo-haptics` | ✅ ~14.0.1 |
+| `npx tsc --noEmit` | ✅ PASSED |
+| Disclaimer acknowledged once + persisted | ✅ safetyStore persist; SafetyIntro before onboarding |
+| First-run routing | ✅ `initialRouteName` all 4 cases asserted; RootNavigator uses it |
+| Disclaimer copy beginner-friendly, not medical | ✅ exact copy; no diagnose/treat/legal/diet terms (asserted) |
+| Start reminder in workout flow | ✅ "Start light today…" on first step |
+| Clearer pain copy | ✅ SetLogger "sharp pain" + PAIN_HELP; progression logic unchanged |
+| Rest timer polish (Restart/+15s/Skip + haptic) | ✅ + `.catch` for unsupported platforms |
+| No stale auto-advance after reload | ✅ countdown transient, never persisted |
+| Settings Safety Tips | ✅ 4 tips + disclaimer |
+| Reset clears acknowledgment | ✅ resetAppData + storage key; routes to SafetyIntro |
+| No backend/Supabase/auth/AI/nutrition/analytics/wearable/photo-upload | ✅ |
 
 ### Loop 15 verification (maker-checker — typecheck + 22 executed assertions)
 | Gate | Result |
@@ -399,6 +415,20 @@
 - CHANGED `src/screens/SessionSummaryScreen.tsx` — clear live session on exit
 - NOTE: resetAppData already clears the session store + key (req 15)
 
+### B-16 files created / changed
+- NEW `src/lib/safety.ts` — PURE DISCLAIMER_TEXT / START_REMINDER / PAIN_HELP / SAFETY_TIPS / initialRouteName
+- NEW `src/lib/restTimer.ts` — PURE formatCountdown / adjustSeconds / initialRest
+- NEW `src/state/safetyStore.ts` — persisted `acknowledged`
+- NEW `src/components/SafetyDisclaimerCard.tsx`, `src/screens/SafetyIntroScreen.tsx`
+- NEW `docs/SAFETY_POLISH_REVIEW.md`
+- CHANGED `src/components/RestTimer.tsx` — Restart/+15s/Skip, clearer copy, expo-haptics end cue, pure helpers
+- CHANGED `src/components/SetLogger.tsx` — clearer sharp-pain copy + PAIN_HELP
+- CHANGED `src/screens/WorkoutGuideScreen.tsx` — start-light reminder banner
+- CHANGED `src/screens/SettingsScreen.tsx` — Safety tips section; reset → SafetyIntro
+- CHANGED `src/navigation/{types.ts,RootNavigator.tsx}` — SafetyIntro route + initial-route logic
+- CHANGED `src/lib/persistConfig.ts` (safety key), `src/lib/useHydration.ts`, `src/lib/resetAppData.ts`
+- CHANGED `package.json` — added `expo-haptics`
+
 ### B-02 files created
 - `supabase/migrations/001_initial_schema.sql` — 15 tables, FKs, 19 indexes, RLS (15 policies), updated_at trigger
 - `supabase/seed.sql` — 12 PF beginner machines, placeholder image keys, alt_exercise_id links, idempotent
@@ -414,14 +444,14 @@
 - Screens: `src/screens/{Onboarding,Today,WorkoutGuide,Progress,Library,Settings}Screen.tsx`
 
 ## Reprioritized sequence (per D12 — auth moved late)
-Onboarding ✅ → Plan generation ✅ → Today ✅ → Workout overview ✅ → Guided session + set logging ✅ → Trainer recommendations ✅ → Progress dashboard ✅ → Adaptive next-workout ✅ → Multi-day navigation/progression ✅ → Local persistence ✅ → Exercise Library ✅ → Weekly check-in ✅ → Settings/profile + machine-guide link ✅ → Body measurements + photos ✅ → Resumable session ✅ → **next: B-16 (TBD)** → *then* Auth + Supabase sync.
+Onboarding ✅ → Plan generation ✅ → Today ✅ → Workout overview ✅ → Guided session + set logging ✅ → Trainer recommendations ✅ → Progress dashboard ✅ → Adaptive next-workout ✅ → Multi-day navigation/progression ✅ → Local persistence ✅ → Exercise Library ✅ → Weekly check-in ✅ → Settings/profile + machine-guide link ✅ → Body measurements + photos ✅ → Resumable session ✅ → Safety polish ✅ → **next: B-17 (TBD)** → *then* Auth + Supabase sync.
 
-## Next task (single, after approval) — user to choose B-16
+## Next task (single, after approval) — user to choose B-17
 > Per the loop rule: pick ONE item from FEATURE_BACKLOG.md, write a mini-spec, build, check, update this file, STOP.
-- **Candidate A:** Safety/legal polish — medical disclaimer (one-time), first-run intro/tips, rest-timer haptics + optional sound; local.
-- **Candidate B:** Streak/weekly unlock + trainer R7 in-app (celebrate 3 workouts, soft week unlock messaging tied to progress); local.
+- **Candidate A:** Streak/weekly unlock + trainer R7 in-app — celebrate 3 workouts/week, soft week-unlock messaging tied to progress; local.
+- **Candidate B:** First-run coach tips inside the session (per-step beginner nudges) + empty-state polish; local.
 - **Candidate C:** Begin Auth + Supabase sync (deferred D12) — first real backend wiring + upload progress photos to private Storage.
-- Awaiting user direction on B-16 scope.
+- Awaiting user direction on B-17 scope.
 
 ## Decisions log
 | # | Decision | Rationale | Date |
