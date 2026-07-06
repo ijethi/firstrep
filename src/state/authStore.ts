@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { deriveAuthStatus, isSupabaseConfigured } from '../lib/supabaseConfig';
 import type { AuthStatus } from '../lib/supabaseConfig';
 import { syncProfile } from '../lib/profileSync';
+import { syncPlan } from '../lib/planSync';
 
 /**
  * Auth store (B-17) — Supabase auth foundation ONLY. Not persisted here; the
@@ -58,7 +59,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!supabase) return { error: NOT_CONFIGURED };
     set({ loading: true });
     const { data, error } = await supabase.auth.signUp({ email, password });
-    if (!error && data.user) void syncProfile(data.user); // profile+onboarding sync (B-18)
+    if (!error && data.user) { void syncProfile(data.user); void syncPlan(data.user); } // profile+onboarding (B-18) + plan (B-19) sync
     set({ loading: false });
     return { error: error?.message ?? null };
   },
@@ -67,7 +68,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!supabase) return { error: NOT_CONFIGURED };
     set({ loading: true });
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (!error && data.user) void syncProfile(data.user); // profile+onboarding sync (B-18)
+    if (!error && data.user) { void syncProfile(data.user); void syncPlan(data.user); } // profile+onboarding (B-18) + plan (B-19) sync
     set({ loading: false });
     return { error: error?.message ?? null };
   },

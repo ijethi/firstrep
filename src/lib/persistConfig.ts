@@ -14,6 +14,7 @@ export const STORAGE_KEYS = {
   workoutSession: 'firstrep:workout-session',
   safety: 'firstrep:safety',
   profileSync: 'firstrep:profile-sync',
+  planSync: 'firstrep:plan-sync',
 } as const;
 
 /** Bump when a persisted store's shape changes; add a branch in migratePersisted. */

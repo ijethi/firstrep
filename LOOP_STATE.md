@@ -7,11 +7,27 @@
 ---
 
 ## Current loop
-- **Loop #:** 18 — **B-18 Profile & onboarding sync only**
-- **Goal of this loop:** First cloud sync step — profile + onboarding answers only, local-wins, local-first. Manual "Sync profile" + status; safe when unconfigured/signed out. NO other data synced.
-- **Success condition:** signed-in user syncs profile+onboarding; safe/no-crash when unconfigured or signed out; Settings shows status + last synced; local data never erased on failure; only profile/onboarding synced; typecheck + sync assertions pass.
+- **Loop #:** 19 — **B-19 Generated plan sync only**
+- **Goal of this loop:** Second cloud sync step — generated plan only (workout_plans/days/exercises), local-wins, local-first. Manual "Sync workout plan" + status. Push only (pull deferred, documented). NO other data synced.
+- **Success condition:** signed-in user pushes plan; safe/no-crash when unconfigured/signed out; Settings shows status + last synced; local plan never mutated/regenerated/erased; only the 3 plan tables touched; typecheck + mapping assertions pass.
 - **Ceiling:** Max 3 fix attempts. (Used: 0 — passed on first checker pass.)
-- **Status:** ✅ Complete — awaiting approval for B-19.
+- **Status:** ✅ Complete — awaiting approval for B-20.
+
+### Loop 19 verification (maker-checker — typecheck + 14 executed assertions)
+| Gate | Result |
+|------|--------|
+| `npx tsc --noEmit` | ✅ PASSED |
+| Local-wins direction | ✅ local plan → push (even if remote exists); else pull; else noop (asserted) |
+| Plan/day/exercise row mapping | ✅ workout_plans/workout_days/workout_exercises columns (asserted) |
+| slug→uuid exercise_id resolution | ✅ via remote `exercises`; missing slug → stop (schema mismatch, not hacked) |
+| Push = delete-then-reinsert user tree | ✅ only signed-in user's rows; FK cascade |
+| **Pull deferred (documented schema gap)** | ✅ cardio/name/notes/guidance not in schema; PLAN_PULL_SUPPORTED=false |
+| **Local plan never mutated/regenerated** | ✅ syncPlan only reads planStore; no setPlan/generatePlan |
+| Failure never erases local plan; app not blocked | ✅ error → status only |
+| Safe when unconfigured/signed out | ✅ status 'disabled' |
+| Only 3 plan tables touched | ✅ no sessions/sets/cardio/progress/recs/etc |
+| Persistence (last synced) + reset | ✅ planSyncStore persist + hydration + reset |
+| No secrets committed | ✅ |
 
 ### Loop 18 verification (maker-checker — typecheck + 11 executed assertions)
 | Gate | Result |
@@ -486,6 +502,16 @@
 - CHANGED `src/lib/persistConfig.ts` (profileSync key), `useHydration.ts`, `resetAppData.ts`
 - NOTE: `onboarding_answers` has no unique(user_id) → push does delete-by-user then insert (remote-only)
 
+### B-19 files created / changed
+- NEW `src/lib/planSyncCore.ts` — PURE decidePlanSyncDirection (local-wins) + toPlanRow/toDayRow/toExerciseRows (slug→uuid + missing detection) + PLAN_PULL_SUPPORTED=false
+- NEW `src/lib/planSync.ts` — syncPlan(user): push tree (delete+reinsert user's rows), pull deferred; never mutates local plan
+- NEW `src/state/planSyncStore.ts` — status + persisted lastSyncedAtISO
+- NEW `src/components/PlanSyncCard.tsx`, `docs/GENERATED_PLAN_SYNC_REVIEW.md`
+- CHANGED `src/state/authStore.ts` — sign-in/up also trigger `syncPlan`
+- CHANGED `src/screens/SettingsScreen.tsx` — PlanSyncCard
+- CHANGED `src/lib/persistConfig.ts` (planSync key), `useHydration.ts`, `resetAppData.ts`
+- NOTE: PULL deferred — schema (workout_days/workout_exercises) doesn't store cardio/name/notes/guidance; future `plan_json` column would enable lossless pull
+
 ### B-02 files created
 - `supabase/migrations/001_initial_schema.sql` — 15 tables, FKs, 19 indexes, RLS (15 policies), updated_at trigger
 - `supabase/seed.sql` — 12 PF beginner machines, placeholder image keys, alt_exercise_id links, idempotent
@@ -501,13 +527,13 @@
 - Screens: `src/screens/{Onboarding,Today,WorkoutGuide,Progress,Library,Settings}Screen.tsx`
 
 ## Reprioritized sequence (per D12 — auth moved late)
-… → Resumable session ✅ → Safety polish ✅ → Supabase auth foundation ✅ → Profile & onboarding sync ✅ → **next: B-19 (SYNC_PLAN step 2)**.
+… → Safety polish ✅ → Supabase auth foundation ✅ → Profile & onboarding sync ✅ → Generated plan sync ✅ → **next: B-20 (SYNC_PLAN step 3)**.
 
-## Next task (single, after approval) — B-19
+## Next task (single, after approval) — B-20
 > Per the loop rule: pick ONE item from FEATURE_BACKLOG.md, write a mini-spec, build, check, update this file, STOP.
-- **Proposed next (SYNC_PLAN step 2):** Sync the **generated plan** (`workout_plans`/`workout_days`/`workout_exercises`) — push local plan on sign-in, pull on a new device; local-wins; still local-first. (Plan progress = step 3, later.)
+- **Proposed next (SYNC_PLAN step 3):** Sync **plan progress** — completed `workout_days` (from `planProgressStore.completedDayIds`), local-wins, still local-first. Depends on plan rows existing remotely (B-19).
 - Alternatives: streak/weekly-unlock (local), or in-session coach tips (local).
-- Awaiting user direction on B-19 scope.
+- Awaiting user direction on B-20 scope.
 
 ## Decisions (append)
 - D14 (2026-06-29): Git commits are authored as the user (`ijethi <Ijethi7@gmail.com>`), no Claude co-author trailer, per explicit user request. Earlier commits (B-01…B-16) were authored "FirstRep Dev" + Claude trailer — offer to rewrite author before the user pushes (nothing is pushed yet).
