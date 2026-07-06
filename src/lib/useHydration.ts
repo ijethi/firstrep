@@ -12,6 +12,7 @@ import { useProfileSyncStore } from '../state/profileSyncStore';
 import { usePlanSyncStore } from '../state/planSyncStore';
 import { usePlanProgressSyncStore } from '../state/planProgressSyncStore';
 import { useWorkoutSyncStore } from '../state/workoutSyncStore';
+import { useCardioSyncStore } from '../state/cardioSyncStore';
 
 /**
  * Hydration gate (B-10). AsyncStorage is async, so persisted stores rehydrate
@@ -48,5 +49,6 @@ export function useAppHydrated(): boolean {
   const j = useOneHydrated(usePlanSyncStore as unknown as PersistedStore);
   const k = useOneHydrated(usePlanProgressSyncStore as unknown as PersistedStore);
   const l = useOneHydrated(useWorkoutSyncStore as unknown as PersistedStore);
-  return a && b && c && d && e && f && g && h && i && j && k && l;
+  const m = useOneHydrated(useCardioSyncStore as unknown as PersistedStore);
+  return a && b && c && d && e && f && g && h && i && j && k && l && m;
 }

@@ -7,11 +7,27 @@
 ---
 
 ## Current loop
-- **Loop #:** 21 — **B-21 Workout sessions & exercise sets sync only**
-- **Goal of this loop:** Fourth cloud sync step — completed workout_sessions + strength exercise_sets only (NO cardio, NO abandoned/active). Local-wins, local-first. Non-destructive migration 003 for client ids. Manual "Sync workouts" + status.
-- **Success condition:** signed-in user pushes completed sessions+sets; abandoned/active/discarded excluded; cardio not synced; safe/no-crash when unconfigured/signed out; Settings shows status; local history never mutated/erased; only the 2 tables touched; typecheck + assertions pass.
-- **Ceiling:** Max 3 fix attempts. (Used: 1 — `felt_overall` not on local session type → mapped null.)
-- **Status:** ✅ Complete — awaiting approval for B-22.
+- **Loop #:** 22 — **B-22 Cardio logs sync only**
+- **Goal of this loop:** Fifth cloud sync step — cardio_logs only, from completed sessions. Local-wins, local-first. Depends on synced sessions (resolve remote id; never fabricate). Non-destructive migration 004. Manual "Sync cardio" + status.
+- **Success condition:** signed-in user pushes completed cardio; abandoned/active/discarded/skipped excluded; stops if session not synced ("Sync workouts before syncing cardio."); safe/no-crash when unconfigured/signed out; Settings shows status; local history never mutated/erased; only cardio_logs written; typecheck + assertions pass.
+- **Ceiling:** Max 3 fix attempts. (Used: 0 — passed on first checker pass.)
+- **Status:** ✅ Complete — awaiting approval for B-23.
+
+### Loop 22 verification (maker-checker — typecheck + 19 assertions + migration sanity)
+| Gate | Result |
+|------|--------|
+| `npx tsc --noEmit` | ✅ PASSED |
+| Non-destructive migration | ✅ `004_cardio_sync_ids.sql` — 1 add-column (local_cardio_log_id) + unique; 0 destructive |
+| **Cardio from completed only** (abandoned/active/skipped/no-minutes excluded) | ✅ asserted |
+| Local-wins direction | ✅ local → push (even if remote exists) |
+| **Depends on synced session; never fabricates** | ✅ stops "Sync workouts before syncing cardio." |
+| Upsert by (user_id, local_cardio_log_id) | ✅ deterministic id `cardio:${localSessionId}:0` |
+| **Local history never mutated / not erased on failure** | ✅ read-only; error → status only |
+| Reads workout_sessions only to resolve ids (no re-sync) | ✅ |
+| Safe when unconfigured/signed out | ✅ status 'disabled' |
+| Only cardio_logs written | ✅ no body/measurements/photos/recs/checkins |
+| Pull deferred (documented) | ✅ CARDIO_PULL_SUPPORTED=false |
+| No secrets committed | ✅ |
 
 ### Loop 21 verification (maker-checker — typecheck + 22 assertions + migration sanity)
 | Gate | Result |
@@ -566,6 +582,15 @@
 - DECISION D16: cardio in a completed session is NOT synced (session row + strength sets only) — cardio_logs is B-22
 - NOTE: PULL deferred — workout_sessions/exercise_sets don't store the full session view (dayName/targets/cardio/etc)
 
+### B-22 files created / changed
+- NEW `supabase/migrations/004_cardio_sync_ids.sql` — NON-DESTRUCTIVE local_cardio_log_id (+unique user_id,local)
+- NEW `src/lib/cardioSyncCore.ts` — PURE hasSyncableCardio (completed+did-cardio), direction (local-wins), localCardioId, toCardioRow; CARDIO_PULL_SUPPORTED=false
+- NEW `src/lib/cardioSync.ts` — syncCardio(user): resolve remote session id via local_session_id → upsert cardio_logs; stops "Sync workouts before syncing cardio." if session unsynced; never mutates local history
+- NEW `src/state/cardioSyncStore.ts`, `src/components/CardioSyncCard.tsx`, `docs/CARDIO_SYNC_REVIEW.md`
+- CHANGED `src/state/authStore.ts` — sign-in/up also trigger `syncCardio`
+- CHANGED `src/screens/SettingsScreen.tsx` — CardioSyncCard
+- CHANGED `src/lib/persistConfig.ts` (cardioSync key), `useHydration.ts`, `resetAppData.ts`
+
 ### B-02 files created
 - `supabase/migrations/001_initial_schema.sql` — 15 tables, FKs, 19 indexes, RLS (15 policies), updated_at trigger
 - `supabase/seed.sql` — 12 PF beginner machines, placeholder image keys, alt_exercise_id links, idempotent
@@ -581,13 +606,13 @@
 - Screens: `src/screens/{Onboarding,Today,WorkoutGuide,Progress,Library,Settings}Screen.tsx`
 
 ## Reprioritized sequence (per D12 — auth moved late)
-… → Profile & onboarding sync ✅ → Generated plan sync ✅ → Plan progress sync ✅ → Workout sessions & sets sync ✅ → **next: B-22 (SYNC_PLAN step 5)**.
+… → Generated plan sync ✅ → Plan progress sync ✅ → Workout sessions & sets sync ✅ → Cardio logs sync ✅ → **next: B-23 (SYNC_PLAN step 6)**.
 
-## Next task (single, after approval) — B-22
+## Next task (single, after approval) — B-23
 > Per the loop rule: pick ONE item from FEATURE_BACKLOG.md, write a mini-spec, build, check, update this file, STOP.
-- **Proposed next (SYNC_PLAN step 5):** Sync **cardio logs** (`cardio_logs`) — the cardio blocks of completed sessions, local-wins, still local-first. Likely reuses the completed-session filter + a client id for de-dup (small migration if needed).
-- Alternatives: body weight & measurements sync (step 6), or a local feature (streak/weekly-unlock).
-- Awaiting user direction on B-22 scope.
+- **Proposed next (SYNC_PLAN step 6):** Sync **body weight & measurements** (`body_weight_logs` + `body_measurement_logs`) — kg/cm canonical, local-wins, still local-first. Likely deterministic client ids + a small non-destructive migration.
+- Alternatives: weekly check-ins sync (step 7), or a local feature (streak/weekly-unlock).
+- Awaiting user direction on B-23 scope.
 
 ## Decisions (append)
 - D14 (2026-06-29): Git commits are authored as the user (`ijethi <Ijethi7@gmail.com>`), no Claude co-author trailer, per explicit user request. Earlier commits (B-01…B-16) were authored "FirstRep Dev" + Claude trailer — offer to rewrite author before the user pushes (nothing is pushed yet).

@@ -8,6 +8,7 @@ import { syncProfile } from '../lib/profileSync';
 import { syncPlan } from '../lib/planSync';
 import { syncPlanProgress } from '../lib/planProgressSync';
 import { syncWorkouts } from '../lib/workoutSync';
+import { syncCardio } from '../lib/cardioSync';
 
 /**
  * Auth store (B-17) — Supabase auth foundation ONLY. Not persisted here; the
@@ -61,7 +62,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!supabase) return { error: NOT_CONFIGURED };
     set({ loading: true });
     const { data, error } = await supabase.auth.signUp({ email, password });
-    if (!error && data.user) { void syncProfile(data.user); void syncPlan(data.user); void syncPlanProgress(data.user); void syncWorkouts(data.user); } // sync: profile (B-18)+plan (B-19)+progress (B-20)+workouts (B-21)
+    if (!error && data.user) { void syncProfile(data.user); void syncPlan(data.user); void syncPlanProgress(data.user); void syncWorkouts(data.user); void syncCardio(data.user); } // sync: profile(18)+plan(19)+progress(20)+workouts(21)+cardio(22)
     set({ loading: false });
     return { error: error?.message ?? null };
   },
@@ -70,7 +71,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!supabase) return { error: NOT_CONFIGURED };
     set({ loading: true });
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (!error && data.user) { void syncProfile(data.user); void syncPlan(data.user); void syncPlanProgress(data.user); void syncWorkouts(data.user); } // sync: profile (B-18)+plan (B-19)+progress (B-20)+workouts (B-21)
+    if (!error && data.user) { void syncProfile(data.user); void syncPlan(data.user); void syncPlanProgress(data.user); void syncWorkouts(data.user); void syncCardio(data.user); } // sync: profile(18)+plan(19)+progress(20)+workouts(21)+cardio(22)
     set({ loading: false });
     return { error: error?.message ?? null };
   },
