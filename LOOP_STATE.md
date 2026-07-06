@@ -7,6 +7,39 @@
 ---
 
 ## Current loop
+- **Loop #:** 28 — **B-28 Full Supabase end-to-end verification + smoke test**
+- **Goal of this loop:** Verify the whole sync layer; produce smoke-test + release-readiness reports; fix the B-27 photo-upload adapter. NO new features.
+- **Success condition:** tsc clean; all sync-core assertions pass; migration order verified; setup checklist + smoke test + readiness reports exist; photo blocker resolved or documented; no secrets; honest PASS/NOT-RUN/NEEDS-LIVE/NEEDS-DEVICE labels.
+- **Ceiling:** Max 3 fix attempts. (Used: 0.)
+- **Status:** ✅ Complete — awaiting approval for B-29.
+
+### Loop 28 verification (what actually ran)
+| Gate | Result |
+|------|--------|
+| `npx tsc --noEmit` | ✅ PASS |
+| Consolidated assertions (10 sync cores + config + base64) | ✅ PASS — 26/26 |
+| Migrations 001–009 present + ordered + all 0-destructive | ✅ PASS |
+| 001 = 15 tables / 15 RLS / 15 policies; seed = 12 (idempotent) | ✅ PASS |
+| `.env.example` == env vars code reads; `.env` untracked + ignored | ✅ PASS |
+| No `getPublicUrl`/`service_role` in src; photos private bucket + 4 policies | ✅ PASS |
+| **B-27 photo blocker** | ✅ adapter upgraded → expo-file-system base64 → `base64ToUint8Array` (unit-tested); file read + Storage PUT = NEEDS DEVICE |
+| Missing-env behavior | ✅ asserted (client null / unconfigured); full boot = NEEDS DEVICE |
+| Live auth + all sync round-trips + RLS cross-user | ⏳ NEEDS LIVE SUPABASE (no project/keys) |
+| Live migration apply | ⏳ NOT RUN (Supabase CLI unavailable) — SQL order documented |
+| Local-first safety invariants (sign-out/reset/failure never erase local; no remote deletes) | ✅ verified statically |
+| NEW docs | `E2E_SUPABASE_SMOKE_TEST.md`, `RELEASE_READINESS_REPORT.md` |
+
+### B-28 files created / changed
+- NEW `docs/E2E_SUPABASE_SMOKE_TEST.md` (setup checklist + per-layer matrix + honest status)
+- NEW `docs/RELEASE_READINESS_REPORT.md`
+- NEW `src/lib/base64.ts` — PURE base64→Uint8Array (unit-tested)
+- CHANGED `src/lib/progressPhotoSync.ts` — upload adapter now expo-file-system base64 → Uint8Array (adapter-only; product flow unchanged)
+- CHANGED `package.json` — added `expo-file-system`
+- NO other product code changed (verification loop)
+
+---
+
+## Prior loop
 - **Loop #:** 27 — **B-27 Progress photos sync (private Storage) — FINAL sync step**
 - **Goal of this loop:** Upload local photos to a PRIVATE Supabase Storage bucket + sync progress_photos metadata. Local-wins, local-first, privacy-first (no public URLs, no analysis). Manual-only trigger. Non-destructive migration 009 (columns + private bucket + owner-only policies). Completes SYNC_PLAN.
 - **Success condition:** signed-in user can attempt photo sync (upload→metadata); private only; local photos never deleted/mutated/erased on failure; safe/no-crash when unconfigured/signed out; Settings shows status; Progress shows privacy copy; only progress_photos + private bucket touched; typecheck + assertions pass.
@@ -744,15 +777,15 @@
 - Screens: `src/screens/{Onboarding,Today,WorkoutGuide,Progress,Library,Settings}Screen.tsx`
 
 ## Reprioritized sequence (per D12 — auth moved late)
-… → Weekly check-ins sync ✅ → Trainer recommendations sync ✅ → Progress photos sync ✅ → **SYNC_PLAN COMPLETE 🎉 → next: B-28 (TBD)**.
+… → Progress photos sync ✅ → SYNC_PLAN COMPLETE 🎉 → E2E verification + smoke test ✅ → **next: B-29 (TBD)**.
 
-## Next task (single, after approval) — B-28
+## Next task (single, after approval) — B-29
 > Per the loop rule: pick ONE item from FEATURE_BACKLOG.md, write a mini-spec, build, check, update this file, STOP.
-> The SYNC_PLAN is fully shipped. Candidates for the next phase:
-- **Candidate A:** End-to-end sync verification against a real (dev) Supabase project — provision, run migrations 001–009 + seed, `.env`, then verify each sync push/pull on-device (also validates the B-27 photo-upload runtime blocker).
-- **Candidate B:** Photo pull / gallery — download or signed-URL display of synced photos on a new device (resolves the deferred pull).
-- **Candidate C:** A remaining local feature — streak/weekly-unlock (trainer R7 in-app), or offline write-queue/retry (B-23 backlog).
-- Awaiting user direction on B-28 scope.
+> B-28 confirmed everything is code-complete + unit-tested; the remaining gaps need a live project/device.
+- **Candidate A (recommended):** LIVE Supabase run — provision a dev project, apply 001–009 + seed, add `.env`, execute the smoke-test matrix on device (auth + all 10 syncs + RLS + on-device photo upload). Turns the 🟡 rows in RELEASE_READINESS_REPORT green.
+- **Candidate B:** Photo pull / signed-URL gallery (resolves the deferred photo pull for new devices).
+- **Candidate C:** A remaining local feature — streak/weekly-unlock (trainer R7 in-app), or offline write-queue/retry.
+- Awaiting user direction on B-29 scope.
 
 ## Decisions (append)
 - D14 (2026-06-29): Git commits are authored as the user (`ijethi <Ijethi7@gmail.com>`), no Claude co-author trailer, per explicit user request. Earlier commits (B-01…B-16) were authored "FirstRep Dev" + Claude trailer — offer to rewrite author before the user pushes (nothing is pushed yet).

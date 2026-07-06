@@ -8,6 +8,9 @@ import {
   storagePath,
   toPhotoRow,
 } from './progressPhotoSyncCore';
+import * as FileSystem from 'expo-file-system';
+
+import { base64ToUint8Array } from './base64';
 import { useProgressStore } from '../state/progressStore';
 import { useProgressPhotoSyncStore } from '../state/progressPhotoSyncStore';
 
@@ -19,15 +22,19 @@ import { useProgressPhotoSyncStore } from '../state/progressPhotoSyncStore';
  * progress_photos + the private bucket. Runs on explicit user action (no auto
  * upload on sign-in). PULL deferred.
  *
- * ⚠️ Runtime note: the local-uri → bytes step below (fetch + arrayBuffer) needs
- * device verification in Expo. See docs/PROGRESS_PHOTO_SYNC_REVIEW.md §Blocker.
+ * Upload adapter (B-28): reads the local file as base64 via expo-file-system and
+ * decodes to a Uint8Array — the Supabase-RN-recommended path (avoids the flaky
+ * `fetch(uri).blob()/arrayBuffer()` on Expo). The base64→bytes decode is pure and
+ * unit-tested; the FileSystem read + Storage upload still need device verification.
  */
 
 /** Upload one local photo file to the private bucket. Metadata is written only after this succeeds. */
 async function uploadPhotoFile(uri: string, path: string): Promise<void> {
   if (!supabase) return;
-  const res = await fetch(uri);
-  const bytes = await res.arrayBuffer();
+  const base64 = await FileSystem.readAsStringAsync(uri, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+  const bytes = base64ToUint8Array(base64);
   const { error } = await supabase.storage
     .from(PROGRESS_PHOTO_BUCKET)
     .upload(path, bytes, { contentType: 'image/jpeg', upsert: true });
