@@ -7,11 +7,26 @@
 ---
 
 ## Current loop
-- **Loop #:** 22 — **B-22 Cardio logs sync only**
-- **Goal of this loop:** Fifth cloud sync step — cardio_logs only, from completed sessions. Local-wins, local-first. Depends on synced sessions (resolve remote id; never fabricate). Non-destructive migration 004. Manual "Sync cardio" + status.
-- **Success condition:** signed-in user pushes completed cardio; abandoned/active/discarded/skipped excluded; stops if session not synced ("Sync workouts before syncing cardio."); safe/no-crash when unconfigured/signed out; Settings shows status; local history never mutated/erased; only cardio_logs written; typecheck + assertions pass.
+- **Loop #:** 23 — **B-23 Body weight logs sync only**
+- **Goal of this loop:** Sixth cloud sync step — body_weight_logs only (canonical kg), local-wins, local-first. Non-destructive migration 005. Safe PULL supported. Manual "Sync body weight" + status.
+- **Success condition:** signed-in user syncs weight logs (upsert); safe/no-crash when unconfigured/signed out; Settings shows status; local weight history never mutated/erased; only body_weight_logs touched; typecheck + assertions pass.
 - **Ceiling:** Max 3 fix attempts. (Used: 0 — passed on first checker pass.)
-- **Status:** ✅ Complete — awaiting approval for B-23.
+- **Status:** ✅ Complete — awaiting approval for B-24.
+
+### Loop 23 verification (maker-checker — typecheck + 19 assertions + migration sanity)
+| Gate | Result |
+|------|--------|
+| `npx tsc --noEmit` | ✅ PASSED |
+| Non-destructive migration | ✅ `005_body_weight_sync_ids.sql` — 1 add-column (local_weight_log_id) + unique; 0 destructive |
+| Local-wins direction | ✅ local → push (even if remote exists) |
+| Canonical kg preserved (no conversion) | ✅ weight_kg passthrough; logged_on = date portion |
+| Clean upsert by (user_id, local_weight_log_id) | ✅ deterministic id `weight:${loggedOnISO}:${index}` |
+| **Safe PULL supported** (only when local empty) | ✅ weightFromRow + defensive filtering; WEIGHT_PULL_SUPPORTED=true |
+| **Local weight history never mutated / not erased** | ✅ push read-only; pull only when empty; error → status only |
+| Safe when unconfigured/signed out | ✅ status 'disabled' |
+| Only body_weight_logs touched | ✅ no measurements/photos/recs/checkins/workouts/cardio |
+| Persistence (last synced) + reset | ✅ bodyWeightSyncStore + hydration + reset |
+| No secrets committed | ✅ |
 
 ### Loop 22 verification (maker-checker — typecheck + 19 assertions + migration sanity)
 | Gate | Result |
@@ -591,6 +606,17 @@
 - CHANGED `src/screens/SettingsScreen.tsx` — CardioSyncCard
 - CHANGED `src/lib/persistConfig.ts` (cardioSync key), `useHydration.ts`, `resetAppData.ts`
 
+### B-23 files created / changed
+- NEW `supabase/migrations/005_body_weight_sync_ids.sql` — NON-DESTRUCTIVE local_weight_log_id (+unique user_id,local)
+- NEW `src/lib/bodyWeightSyncCore.ts` — PURE hasSyncableWeights, direction (local-wins), localWeightId, toWeightRow(s), weightFromRow(s) SAFE pull; WEIGHT_PULL_SUPPORTED=true
+- NEW `src/lib/bodyWeightSync.ts` — syncBodyWeight(user): upsert push / safe pull (only when local empty); never mutates local on failure
+- NEW `src/state/bodyWeightSyncStore.ts`, `src/components/BodyWeightSyncCard.tsx`, `docs/BODY_WEIGHT_SYNC_REVIEW.md`
+- CHANGED `src/state/progressStore.ts` — `importBodyWeights` (pull path)
+- CHANGED `src/state/authStore.ts` — sign-in/up also trigger `syncBodyWeight`
+- CHANGED `src/screens/SettingsScreen.tsx` — BodyWeightSyncCard
+- CHANGED `src/lib/persistConfig.ts` (bodyWeightSync key), `useHydration.ts`, `resetAppData.ts`
+- NOTE: first sync loop with SAFE pull (weight = kg + date; simple to reconstruct)
+
 ### B-02 files created
 - `supabase/migrations/001_initial_schema.sql` — 15 tables, FKs, 19 indexes, RLS (15 policies), updated_at trigger
 - `supabase/seed.sql` — 12 PF beginner machines, placeholder image keys, alt_exercise_id links, idempotent
@@ -606,13 +632,14 @@
 - Screens: `src/screens/{Onboarding,Today,WorkoutGuide,Progress,Library,Settings}Screen.tsx`
 
 ## Reprioritized sequence (per D12 — auth moved late)
-… → Generated plan sync ✅ → Plan progress sync ✅ → Workout sessions & sets sync ✅ → Cardio logs sync ✅ → **next: B-23 (SYNC_PLAN step 6)**.
+… → Plan progress sync ✅ → Workout sessions & sets sync ✅ → Cardio logs sync ✅ → Body weight logs sync ✅ → **next: B-24 (SYNC_PLAN step 6 cont.)**.
 
-## Next task (single, after approval) — B-23
+## Next task (single, after approval) — B-24
 > Per the loop rule: pick ONE item from FEATURE_BACKLOG.md, write a mini-spec, build, check, update this file, STOP.
-- **Proposed next (SYNC_PLAN step 6):** Sync **body weight & measurements** (`body_weight_logs` + `body_measurement_logs`) — kg/cm canonical, local-wins, still local-first. Likely deterministic client ids + a small non-destructive migration.
-- Alternatives: weekly check-ins sync (step 7), or a local feature (streak/weekly-unlock).
-- Awaiting user direction on B-23 scope.
+- **Proposed next:** Sync **body measurements** (`body_measurement_logs`) — waist/chest/hips cm canonical, local-wins, safe pull (like weight). Small non-destructive migration for a client id.
+- Then remaining SYNC_PLAN steps: weekly check-ins (step 7), trainer recommendations (step 8), progress photos → private Storage (step 9, last).
+- Alternatives: a local feature (streak/weekly-unlock).
+- Awaiting user direction on B-24 scope.
 
 ## Decisions (append)
 - D14 (2026-06-29): Git commits are authored as the user (`ijethi <Ijethi7@gmail.com>`), no Claude co-author trailer, per explicit user request. Earlier commits (B-01…B-16) were authored "FirstRep Dev" + Claude trailer — offer to rewrite author before the user pushes (nothing is pushed yet).
