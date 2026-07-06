@@ -15,6 +15,7 @@ import { useCardioSyncStore } from '../state/cardioSyncStore';
 import { useBodyWeightSyncStore } from '../state/bodyWeightSyncStore';
 import { useBodyMeasurementSyncStore } from '../state/bodyMeasurementSyncStore';
 import { useWeeklyCheckInSyncStore } from '../state/weeklyCheckInSyncStore';
+import { useTrainerRecSyncStore } from '../state/trainerRecommendationSyncStore';
 
 /**
  * Clears all locally persisted FirstRep data (dev/testing + Settings reset).
@@ -40,4 +41,5 @@ export async function resetLocalAppData(): Promise<void> {
   useBodyWeightSyncStore.setState({ status: 'idle', lastSyncedAtISO: null, lastError: null });
   useBodyMeasurementSyncStore.setState({ status: 'idle', lastSyncedAtISO: null, lastError: null });
   useWeeklyCheckInSyncStore.setState({ status: 'idle', lastSyncedAtISO: null, lastError: null });
+  useTrainerRecSyncStore.setState({ status: 'idle', lastSyncedAtISO: null, lastError: null });
 }

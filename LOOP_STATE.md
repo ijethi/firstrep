@@ -7,11 +7,28 @@
 ---
 
 ## Current loop
-- **Loop #:** 25 — **B-25 Weekly check-ins sync only**
-- **Goal of this loop:** Eighth cloud sync step — weekly_checkins only, local-wins, local-first. Full fidelity via `payload` jsonb (categorical/barriers/goal/message preserved). Non-destructive migration 007. Safe PULL. Manual "Sync weekly check-ins" + status.
-- **Success condition:** signed-in user syncs check-ins (upsert); safe/no-crash when unconfigured/signed out; Settings shows status; local check-ins never mutated/erased; no value reinterpretation; only weekly_checkins touched; typecheck + assertions pass.
+- **Loop #:** 26 — **B-26 Trainer recommendations sync only**
+- **Goal of this loop:** Ninth cloud sync step — trainer_recommendations only, local-wins, local-first. Full fidelity via `payload` jsonb (all 9 fields). Non-destructive migration 008. Safe PULL. Not regenerated during sync. Manual "Sync trainer recommendations" + status.
+- **Success condition:** signed-in user syncs recs (upsert); safe/no-crash when unconfigured/signed out; Settings shows status; local recs never mutated/erased/regenerated; only trainer_recommendations touched; typecheck + assertions pass.
 - **Ceiling:** Max 3 fix attempts. (Used: 0 — passed on first checker pass.)
-- **Status:** ✅ Complete — awaiting approval for B-26.
+- **Status:** ✅ Complete — awaiting approval for B-27.
+
+### Loop 26 verification (maker-checker — typecheck + 26 assertions + migration sanity)
+| Gate | Result |
+|------|--------|
+| `npx tsc --noEmit` | ✅ PASSED |
+| Non-destructive migration | ✅ `008_trainer_recommendation_sync_ids.sql` — 2 add-column (payload, local id) + unique; 0 destructive |
+| Local-wins direction | ✅ local → push (even if remote exists) |
+| **All 9 fields preserved** (rule_id/type/exercise_id/title/message/next_action/priority/generated_at/source) | ✅ via payload; no reinterpretation |
+| source mapping | ✅ DB enum 'rule_engine'; original 'rule_based' in payload.source |
+| context_id null (slug not uuid); action jsonb has type/priority/nextAction | ✅ |
+| **Not regenerated during sync** | ✅ reads store only; no generateRecommendations |
+| Clean upsert by (user_id, local_recommendation_id) | ✅ deterministic id |
+| **Safe PULL via payload** (only when local empty) | ✅ invalid/empty rows dropped; REC_PULL_SUPPORTED=true |
+| **Local recs never mutated / not erased** | ✅ |
+| Safe when unconfigured/signed out | ✅ status 'disabled' |
+| Only trainer_recommendations touched | ✅ |
+| No secrets committed | ✅ |
 
 ### Loop 25 verification (maker-checker — typecheck + 22 assertions + migration sanity)
 | Gate | Result |
@@ -670,6 +687,17 @@
 - CHANGED `src/lib/persistConfig.ts` (weeklyCheckInSync key), `useHydration.ts`, `resetAppData.ts`
 - DECISION D18: added `payload jsonb` to `weekly_checkins` (non-destructive) — the DB int scales can't hold confidence/barriers/goal/message; payload preserves full fidelity + enables safe pull (int cols kept as a derived queryable view)
 
+### B-26 files created / changed
+- NEW `supabase/migrations/008_trainer_recommendation_sync_ids.sql` — NON-DESTRUCTIVE: add `payload jsonb` + `local_recommendation_id` (+unique user_id,local)
+- NEW `src/lib/trainerRecommendationSyncCore.ts` — PURE direction (local-wins), localRecId, toRecRow(s) (derived cols + full payload; source→rule_engine; context_id null), recFromRow(s) SAFE pull; REC_PULL_SUPPORTED=true
+- NEW `src/lib/trainerRecommendationSync.ts` — syncTrainerRecommendations(user): upsert push / safe pull (only when local empty); never regenerates; never mutates local on failure
+- NEW `src/state/trainerRecommendationSyncStore.ts`, `src/components/TrainerRecommendationSyncCard.tsx`, `docs/TRAINER_RECOMMENDATION_SYNC_REVIEW.md`
+- CHANGED `src/state/authStore.ts` — sign-in/up also trigger `syncTrainerRecommendations`
+- CHANGED `src/screens/SettingsScreen.tsx` — TrainerRecommendationSyncCard
+- CHANGED `src/lib/persistConfig.ts` (trainerRecSync key), `useHydration.ts`, `resetAppData.ts`
+- REUSED `recommendationStore.setRecommendations` for the pull path (no new store helper)
+- DECISION D19: added `payload jsonb` to `trainer_recommendations` (non-destructive) — DB lacks type/title/nextAction/priority/generated_at cols and its source enum has no 'rule_based'; payload preserves full fidelity; source→'rule_engine' documented
+
 ### B-02 files created
 - `supabase/migrations/001_initial_schema.sql` — 15 tables, FKs, 19 indexes, RLS (15 policies), updated_at trigger
 - `supabase/seed.sql` — 12 PF beginner machines, placeholder image keys, alt_exercise_id links, idempotent
@@ -685,14 +713,13 @@
 - Screens: `src/screens/{Onboarding,Today,WorkoutGuide,Progress,Library,Settings}Screen.tsx`
 
 ## Reprioritized sequence (per D12 — auth moved late)
-… → Cardio logs sync ✅ → Body weight logs sync ✅ → Body measurements sync ✅ → Weekly check-ins sync ✅ → **next: B-26 (SYNC_PLAN step 8)**.
+… → Body measurements sync ✅ → Weekly check-ins sync ✅ → Trainer recommendations sync ✅ → **next: B-27 (SYNC_PLAN step 9, FINAL sync)**.
 
-## Next task (single, after approval) — B-26
+## Next task (single, after approval) — B-27
 > Per the loop rule: pick ONE item from FEATURE_BACKLOG.md, write a mini-spec, build, check, update this file, STOP.
-- **Proposed next (SYNC_PLAN step 8):** Sync **trainer recommendations** (`trainer_recommendations`) — rule/type/message/action, local-wins, safe pull. Small non-destructive migration for a client id (+ maybe a jsonb for title/nextAction/priority).
-- Then the FINAL sync step: progress photos → private Supabase Storage (step 9).
-- Alternatives: a local feature (streak/weekly-unlock).
-- Awaiting user direction on B-26 scope.
+- **Proposed next (SYNC_PLAN step 9 — LAST sync step):** Sync **progress photos** → upload local uris to a PRIVATE Supabase Storage bucket (`progress-photos`), store the storage key in `progress_photos`, serve via signed URLs. Local-wins; needs the private bucket + storage RLS policies. Completes the SYNC_PLAN.
+- Alternatives: a local feature (streak/weekly-unlock), or a full end-to-end sync verification pass.
+- Awaiting user direction on B-27 scope.
 
 ## Decisions (append)
 - D14 (2026-06-29): Git commits are authored as the user (`ijethi <Ijethi7@gmail.com>`), no Claude co-author trailer, per explicit user request. Earlier commits (B-01…B-16) were authored "FirstRep Dev" + Claude trailer — offer to rewrite author before the user pushes (nothing is pushed yet).
