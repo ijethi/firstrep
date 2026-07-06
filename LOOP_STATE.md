@@ -7,6 +7,35 @@
 ---
 
 ## Current loop
+- **Loop #:** 29 — **B-29 Live Supabase smoke test (used DUMMY env — keys were exposed)**
+- **Goal of this loop:** Run against the real project; but the pasted keys included the SECRET key, so used a DUMMY `.env` and did NOT connect live. Verified config detection + env safety + static checks; documented live steps as NOT RUN pending rotated keys.
+- **Success condition:** B-28 committed; no secrets committed; tsc passes; env detection works; live steps honestly labeled; live-results + readiness reports updated.
+- **Ceiling:** Max 3 fix attempts. (Used: 0.)
+- **Status:** ✅ Complete (dummy-env run) — awaiting approval for B-30. ⚠️ OWNER: rotate the exposed secret key.
+
+### Loop 29 verification (what actually ran)
+| Gate | Result |
+|------|--------|
+| B-28 committed | ✅ `0307aea` |
+| `npx tsc --noEmit` | ✅ PASS |
+| `.env` created (DUMMY), gitignored, 0 tracked | ✅ |
+| `.env.example` placeholders only; app reads only the 2 EXPO_PUBLIC vars | ✅ |
+| No service_role/secret in tracked repo | ✅ (only doc text) |
+| Config detection: no env→false, dummy→true, status derivation | ✅ (executed) |
+| Consolidated sync-core + base64 assertions | ✅ 26/26 (from B-28, unchanged) |
+| Live migrations/seed/bucket/auth/sync/photo/RLS | ⏳ NOT RUN — dummy env; needs ROTATED real keys + device |
+| DECISION D21 | Did NOT use the pasted keys (secret exposed) — dummy env; owner must rotate secret |
+
+### B-29 files created / changed
+- NEW `.env` (DUMMY, gitignored — NOT committed)
+- NEW `docs/LIVE_SUPABASE_SMOKE_TEST_RESULTS.md`
+- CHANGED `docs/RELEASE_READINESS_REPORT.md` (live-run status)
+- CHANGED `LOOP_STATE.md`
+- NO source/product code changed
+
+---
+
+## Prior loop
 - **Loop #:** 28 — **B-28 Full Supabase end-to-end verification + smoke test**
 - **Goal of this loop:** Verify the whole sync layer; produce smoke-test + release-readiness reports; fix the B-27 photo-upload adapter. NO new features.
 - **Success condition:** tsc clean; all sync-core assertions pass; migration order verified; setup checklist + smoke test + readiness reports exist; photo blocker resolved or documented; no secrets; honest PASS/NOT-RUN/NEEDS-LIVE/NEEDS-DEVICE labels.
@@ -777,9 +806,12 @@
 - Screens: `src/screens/{Onboarding,Today,WorkoutGuide,Progress,Library,Settings}Screen.tsx`
 
 ## Reprioritized sequence (per D12 — auth moved late)
-… → Progress photos sync ✅ → SYNC_PLAN COMPLETE 🎉 → E2E verification + smoke test ✅ → **next: B-29 (TBD)**.
+… → SYNC_PLAN COMPLETE 🎉 → E2E verification ✅ → Live smoke test (dummy env; live NOT RUN) ✅ → **next: B-30 = real live run with ROTATED keys**.
 
-## Next task (single, after approval) — B-29
+## Next task (single, after approval) — B-30
+> **Prereq: rotate the exposed Supabase secret key first.** Then a true live run: fresh anon key in `.env` → apply 001–009 + seed → verify bucket/policies → auth → each sync card → on-device photo upload → cross-user RLS. Fills the NOT-RUN rows in LIVE_SUPABASE_SMOKE_TEST_RESULTS.md.
+
+## (superseded) Next task — B-29
 > Per the loop rule: pick ONE item from FEATURE_BACKLOG.md, write a mini-spec, build, check, update this file, STOP.
 > B-28 confirmed everything is code-complete + unit-tested; the remaining gaps need a live project/device.
 - **Candidate A (recommended):** LIVE Supabase run — provision a dev project, apply 001–009 + seed, add `.env`, execute the smoke-test matrix on device (auth + all 10 syncs + RLS + on-device photo upload). Turns the 🟡 rows in RELEASE_READINESS_REPORT green.

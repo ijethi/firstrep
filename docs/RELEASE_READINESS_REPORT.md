@@ -42,6 +42,12 @@ See `docs/E2E_SUPABASE_SMOKE_TEST.md`.
 | Trainer recommendations | ✅ | 🟡 |
 | Progress photos (private Storage) | ✅ | 🟡 NEEDS DEVICE + LIVE |
 
+## 3b. Live run status (B-29)
+Attempted with a **DUMMY `.env`** only — the real keys were exposed in chat (secret included), so no
+connection was made to the live project (see `docs/LIVE_SUPABASE_SMOKE_TEST_RESULTS.md`). Config
+detection + all static/unit checks **passed**; live auth/sync/migration/photo remain 🟡 **NOT RUN**
+pending **rotated** keys + a device. **Owner action: rotate the exposed secret key.**
+
 ## 4. Known blockers / follow-ups
 1. **Live Supabase verification** (🟡): provision a dev project, apply 001–009 + seed, add `.env`, then
    run the smoke-test matrix. Highest-value next step before any sync ships to users.
