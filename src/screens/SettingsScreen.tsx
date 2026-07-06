@@ -9,6 +9,7 @@ import UnitToggle from '../components/UnitToggle';
 import AuthStatusCard from '../components/AuthStatusCard';
 import ProfileSyncCard from '../components/ProfileSyncCard';
 import PlanSyncCard from '../components/PlanSyncCard';
+import PlanProgressSyncCard from '../components/PlanProgressSyncCard';
 import { ChoiceGroup, MultiChoiceGroup } from '../components/onboarding';
 import type { ChoiceOption } from '../components/onboarding';
 import { colors, spacing, typography } from '../theme';
@@ -171,6 +172,7 @@ export default function SettingsScreen() {
       <AuthStatusCard onSignIn={() => navigation.navigate('SignIn')} />
       <ProfileSyncCard />
       <PlanSyncCard />
+      <PlanProgressSyncCard />
 
       <SettingsSection title="Safety tips">
         {SAFETY_TIPS.map((tip, i) => (

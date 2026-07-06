@@ -7,11 +7,26 @@
 ---
 
 ## Current loop
-- **Loop #:** 19 — **B-19 Generated plan sync only**
-- **Goal of this loop:** Second cloud sync step — generated plan only (workout_plans/days/exercises), local-wins, local-first. Manual "Sync workout plan" + status. Push only (pull deferred, documented). NO other data synced.
-- **Success condition:** signed-in user pushes plan; safe/no-crash when unconfigured/signed out; Settings shows status + last synced; local plan never mutated/regenerated/erased; only the 3 plan tables touched; typecheck + mapping assertions pass.
+- **Loop #:** 20 — **B-20 Plan progress sync only**
+- **Goal of this loop:** Third cloud sync step — plan progress only (completedDayIds/last/selected), local-wins, local-first. New non-destructive `plan_progress` table (migration 002). Manual "Sync plan progress" + status. NO workout history synced.
+- **Success condition:** signed-in user syncs progress (clean upsert); schema gap solved via non-destructive migration; safe/no-crash when unconfigured/signed out; Settings shows status + last synced; local plan/history never mutated; abandoned sessions can't advance synced progress; typecheck + assertions pass.
 - **Ceiling:** Max 3 fix attempts. (Used: 0 — passed on first checker pass.)
-- **Status:** ✅ Complete — awaiting approval for B-20.
+- **Status:** ✅ Complete — awaiting approval for B-21.
+
+### Loop 20 verification (maker-checker — typecheck + 17 assertions + migration sanity)
+| Gate | Result |
+|------|--------|
+| `npx tsc --noEmit` | ✅ PASSED |
+| Non-destructive migration | ✅ `002_plan_progress.sql` — 1 new table, RLS, unique(user_id); 0 other tables touched |
+| Local-wins direction | ✅ local → push (even if remote exists); else pull; else noop |
+| Clean upsert (no delete-then-insert) | ✅ onConflict user_id |
+| Pull safe + guarded (applies only when local empty) | ✅ + defensive parsing |
+| **Abandoned sessions can't advance synced progress** | ✅ passthrough of completedDayIds; markDayCompleted is completed-only (B-15) |
+| **Local plan & history never mutated** | ✅ syncPlanProgress reads only; error → status only |
+| Safe when unconfigured/signed out | ✅ status 'disabled' |
+| Only plan progress touched | ✅ no sessions/sets/cardio/etc |
+| Persistence (last synced) + reset | ✅ planProgressSyncStore + hydration + reset |
+| No secrets committed | ✅ |
 
 ### Loop 19 verification (maker-checker — typecheck + 14 executed assertions)
 | Gate | Result |
@@ -512,6 +527,18 @@
 - CHANGED `src/lib/persistConfig.ts` (planSync key), `useHydration.ts`, `resetAppData.ts`
 - NOTE: PULL deferred — schema (workout_days/workout_exercises) doesn't store cardio/name/notes/guidance; future `plan_json` column would enable lossless pull
 
+### B-20 files created / changed
+- NEW `supabase/migrations/002_plan_progress.sql` — NON-DESTRUCTIVE new `plan_progress` table (unique user_id, RLS)
+- NEW `src/lib/planProgressSyncCore.ts` — PURE direction (local-wins) + toProgressRow (passthrough) + progressFromRow (defensive)
+- NEW `src/lib/planProgressSync.ts` — syncPlanProgress(user): upsert push / safe pull; never mutates plan/history
+- NEW `src/state/planProgressSyncStore.ts`, `src/components/PlanProgressSyncCard.tsx`, `docs/PLAN_PROGRESS_SYNC_REVIEW.md`
+- CHANGED `src/state/planProgressStore.ts` — `importProgress` (pull path)
+- CHANGED `src/state/authStore.ts` — sign-in/up also trigger `syncPlanProgress`
+- CHANGED `src/screens/SettingsScreen.tsx` — PlanProgressSyncCard
+- CHANGED `src/lib/persistConfig.ts` (planProgressSync key), `useHydration.ts`, `resetAppData.ts`
+- CHANGED `DATA_MODEL.md` — noted the new `plan_progress` table
+- DECISION D15: added `plan_progress` table (16th) — needed a clean home for progress; non-destructive (new table only), not hacked into existing tables
+
 ### B-02 files created
 - `supabase/migrations/001_initial_schema.sql` — 15 tables, FKs, 19 indexes, RLS (15 policies), updated_at trigger
 - `supabase/seed.sql` — 12 PF beginner machines, placeholder image keys, alt_exercise_id links, idempotent
@@ -527,13 +554,13 @@
 - Screens: `src/screens/{Onboarding,Today,WorkoutGuide,Progress,Library,Settings}Screen.tsx`
 
 ## Reprioritized sequence (per D12 — auth moved late)
-… → Safety polish ✅ → Supabase auth foundation ✅ → Profile & onboarding sync ✅ → Generated plan sync ✅ → **next: B-20 (SYNC_PLAN step 3)**.
+… → Supabase auth foundation ✅ → Profile & onboarding sync ✅ → Generated plan sync ✅ → Plan progress sync ✅ → **next: B-21 (SYNC_PLAN step 4)**.
 
-## Next task (single, after approval) — B-20
+## Next task (single, after approval) — B-21
 > Per the loop rule: pick ONE item from FEATURE_BACKLOG.md, write a mini-spec, build, check, update this file, STOP.
-- **Proposed next (SYNC_PLAN step 3):** Sync **plan progress** — completed `workout_days` (from `planProgressStore.completedDayIds`), local-wins, still local-first. Depends on plan rows existing remotely (B-19).
+- **Proposed next (SYNC_PLAN step 4):** Sync **workout sessions & sets** (`workout_sessions` + `exercise_sets`), local-wins, still local-first. Largest sync surface — likely a per-session upsert keyed by a stable local session id (may need a small migration for a client id column).
 - Alternatives: streak/weekly-unlock (local), or in-session coach tips (local).
-- Awaiting user direction on B-20 scope.
+- Awaiting user direction on B-21 scope.
 
 ## Decisions (append)
 - D14 (2026-06-29): Git commits are authored as the user (`ijethi <Ijethi7@gmail.com>`), no Claude co-author trailer, per explicit user request. Earlier commits (B-01…B-16) were authored "FirstRep Dev" + Claude trailer — offer to rewrite author before the user pushes (nothing is pushed yet).

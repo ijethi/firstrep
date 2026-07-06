@@ -201,6 +201,11 @@ Raw quiz responses (audit + replanning).
 
 ---
 
+## Added post-MVP
+- **`plan_progress`** (migration `002_plan_progress.sql`, B-20) — one row per user (`unique(user_id)`):
+  `completed_day_ids jsonb`, `last_completed_day_id`, `selected_day_id`, `workout_plan_id` FK, timestamps,
+  RLS `auth.uid()=user_id`. Non-destructive addition; home for local plan-progress sync (SYNC_PLAN step 3).
+
 ## Conventions & notes
 - **Units stored canonical:** weight in **kg**, height/measurements in **cm**. Display layer converts per `unit_pref`. (Logging UI is lb-first for PF users; we convert on write.) — keeps math/charts consistent.
 - **RLS everywhere:** every user-owned table has policy `user_id = auth.uid()`. `exercises` is the only shared-read table.

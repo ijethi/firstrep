@@ -17,6 +17,8 @@ interface PlanProgressState {
   selectedDayId: string | null; // null = follow the recommended (current) day
   markDayCompleted: (dayId: string) => void;
   selectDay: (dayId: string | null) => void;
+  /** Replace local progress wholesale (used by the plan-progress PULL sync, B-20). */
+  importProgress: (completedDayIds: string[], lastCompletedDayId: string | null, selectedDayId: string | null) => void;
   reset: () => void;
 }
 
@@ -37,6 +39,9 @@ export const usePlanProgressStore = create<PlanProgressState>()(
         })),
 
       selectDay: (dayId) => set({ selectedDayId: dayId }),
+
+      importProgress: (completedDayIds, lastCompletedDayId, selectedDayId) =>
+        set({ completedDayIds: [...completedDayIds], lastCompletedDayId, selectedDayId }),
 
       reset: () => set({ completedDayIds: [], lastCompletedDayId: null, selectedDayId: null }),
     }),
