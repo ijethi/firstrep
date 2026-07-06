@@ -40,7 +40,7 @@
 - [ ] **B-16** Cardio tracking screen (S) — machine picker, timer/manual, writes `cardio_logs`. *Success: logs minutes, adds to weekly total.*
 - [x] **B-17** Body weight + measurements logging (S) — ✅ body weight (Loop 7) + measurements waist/chest/hips (Loop 14, cm canonical, latest+change on dashboard).
 - [x] **B-18** Progress dashboard (L) — ✅ Loop 7 (user-sequence "B-07"). Card-based dashboard: workouts/streak/sets/cardio/exercises, recent tips, strength + cardio cards, body-weight logging, empty states. Pure tested stats. (Charts deferred — cards only per scope.)
-- [~] **B-19** Progress photos (M) — ✅ local capture in Loop 14 (expo-image-picker, local uri only, latest + grid, private-on-device copy). Upload to private Supabase bucket + signed URLs deferred to the auth/Storage loop.
+- [x] **B-19** Progress photos (M) — ✅ local capture (Loop 14) + upload to PRIVATE Supabase Storage bucket with owner-only RLS + progress_photos metadata sync (Loop 27, user-sequence "B-27"). Signed-URL gallery/pull still deferred. NOTE: cloud sync for ALL data (profile→photos) shipped across Loops 17–27 (SYNC_PLAN complete).
 
 ## Epic F — Check-in & Library & Settings (P1)
 - [x] **B-20** Weekly check-in flow (M) — ✅ Loop 12 (user-sequence "B-12"). Persisted local check-in (workouts/energy/soreness/confidence/barriers/goal), rule-based coaching message, prompt + latest-summary card on Today + Progress. Maps to `weekly_checkins`. Pure logic tested. (Plan-modifying R5/R7 + due-detection deferred.)

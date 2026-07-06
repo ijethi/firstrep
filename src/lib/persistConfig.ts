@@ -22,6 +22,7 @@ export const STORAGE_KEYS = {
   bodyMeasurementSync: 'firstrep:body-measurement-sync',
   weeklyCheckInSync: 'firstrep:weekly-checkin-sync',
   trainerRecSync: 'firstrep:trainer-rec-sync',
+  progressPhotoSync: 'firstrep:progress-photo-sync',
 } as const;
 
 /** Bump when a persisted store's shape changes; add a branch in migratePersisted. */

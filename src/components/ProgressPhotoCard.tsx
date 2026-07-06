@@ -38,7 +38,7 @@ export default function ProgressPhotoCard({ stats, onAdd }: Props) {
   return (
     <View style={styles.card}>
       <Text style={styles.title}>📸 Progress photos</Text>
-      <Text style={styles.privacy}>Progress photos stay on this device for now.</Text>
+      <Text style={styles.privacy}>Photos stay on this device unless you choose to sync them.</Text>
 
       {stats.latest ? (
         <Image source={{ uri: stats.latest.uri }} style={styles.hero} resizeMode="cover" />

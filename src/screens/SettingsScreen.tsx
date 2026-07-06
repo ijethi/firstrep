@@ -16,6 +16,7 @@ import BodyWeightSyncCard from '../components/BodyWeightSyncCard';
 import BodyMeasurementSyncCard from '../components/BodyMeasurementSyncCard';
 import WeeklyCheckInSyncCard from '../components/WeeklyCheckInSyncCard';
 import TrainerRecommendationSyncCard from '../components/TrainerRecommendationSyncCard';
+import ProgressPhotoSyncCard from '../components/ProgressPhotoSyncCard';
 import { ChoiceGroup, MultiChoiceGroup } from '../components/onboarding';
 import type { ChoiceOption } from '../components/onboarding';
 import { colors, spacing, typography } from '../theme';
@@ -185,6 +186,7 @@ export default function SettingsScreen() {
       <BodyMeasurementSyncCard />
       <WeeklyCheckInSyncCard />
       <TrainerRecommendationSyncCard />
+      <ProgressPhotoSyncCard />
 
       <SettingsSection title="Safety tips">
         {SAFETY_TIPS.map((tip, i) => (

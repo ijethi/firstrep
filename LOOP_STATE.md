@@ -7,11 +7,28 @@
 ---
 
 ## Current loop
-- **Loop #:** 26 — **B-26 Trainer recommendations sync only**
-- **Goal of this loop:** Ninth cloud sync step — trainer_recommendations only, local-wins, local-first. Full fidelity via `payload` jsonb (all 9 fields). Non-destructive migration 008. Safe PULL. Not regenerated during sync. Manual "Sync trainer recommendations" + status.
-- **Success condition:** signed-in user syncs recs (upsert); safe/no-crash when unconfigured/signed out; Settings shows status; local recs never mutated/erased/regenerated; only trainer_recommendations touched; typecheck + assertions pass.
+- **Loop #:** 27 — **B-27 Progress photos sync (private Storage) — FINAL sync step**
+- **Goal of this loop:** Upload local photos to a PRIVATE Supabase Storage bucket + sync progress_photos metadata. Local-wins, local-first, privacy-first (no public URLs, no analysis). Manual-only trigger. Non-destructive migration 009 (columns + private bucket + owner-only policies). Completes SYNC_PLAN.
+- **Success condition:** signed-in user can attempt photo sync (upload→metadata); private only; local photos never deleted/mutated/erased on failure; safe/no-crash when unconfigured/signed out; Settings shows status; Progress shows privacy copy; only progress_photos + private bucket touched; typecheck + assertions pass.
 - **Ceiling:** Max 3 fix attempts. (Used: 0 — passed on first checker pass.)
-- **Status:** ✅ Complete — awaiting approval for B-27.
+- **Status:** ✅ Complete (with a documented runtime upload blocker) — awaiting approval for B-28.
+
+### Loop 27 verification (maker-checker — typecheck + 22 assertions + migration/privacy sanity)
+| Gate | Result |
+|------|--------|
+| `npx tsc --noEmit` | ✅ PASSED |
+| Non-destructive migration | ✅ `009_progress_photo_sync.sql` — add columns + PRIVATE bucket + 4 owner-only policies; 0 destructive |
+| **Private bucket (public=false); no public URLs** | ✅ no getPublicUrl helper; storage_path is a key not a URL |
+| User-scoped paths (RLS owner-only) | ✅ `userId/date/localId.jpg`; fs-safe id |
+| Local-wins direction | ✅ local → push (even if remote exists) |
+| Upload file FIRST, then metadata (req 4) | ✅ upsert by (user_id, local_photo_id) |
+| **Local photos never deleted/mutated on failure** | ✅ read-only; error → status only |
+| **No analysis / comparison / AI** | ✅ (grep: only disclaimer text) |
+| Manual-only trigger (no auto-upload on sign-in) | ✅ D20 (privacy/bandwidth) |
+| Pull deferred (metadata ≠ local file, req 12) | ✅ PHOTO_PULL_SUPPORTED=false |
+| Privacy copy (Progress + card) | ✅ exact required strings |
+| Safe when unconfigured/signed out; only progress_photos+bucket; no secrets | ✅ |
+| ⚠️ Runtime upload path (uri→bytes in Expo) | documented blocker; needs device verification |
 
 ### Loop 26 verification (maker-checker — typecheck + 26 assertions + migration sanity)
 | Gate | Result |
@@ -698,6 +715,20 @@
 - REUSED `recommendationStore.setRecommendations` for the pull path (no new store helper)
 - DECISION D19: added `payload jsonb` to `trainer_recommendations` (non-destructive) — DB lacks type/title/nextAction/priority/generated_at cols and its source enum has no 'rule_based'; payload preserves full fidelity; source→'rule_engine' documented
 
+### B-27 files created / changed (FINAL sync step)
+- NEW `supabase/migrations/009_progress_photo_sync.sql` — NON-DESTRUCTIVE: add local_photo_id/storage_bucket/uploaded_at (+unique), create PRIVATE `progress-photos` bucket + 4 owner-only storage.objects policies
+- NEW `src/lib/progressPhotoSyncCore.ts` — PURE direction (local-wins), fs-safe localPhotoId, user-scoped storagePath, toPhotoRow (key not URL, no local-uri leak); PHOTO_PULL_SUPPORTED=false
+- NEW `src/lib/progressPhotoSync.ts` — syncProgressPhotos(user): upload file FIRST → upsert metadata; never deletes/mutates local photos; pull deferred
+- NEW `src/state/progressPhotoSyncStore.ts`, `src/components/ProgressPhotoSyncCard.tsx`, `docs/PROGRESS_PHOTO_SYNC_REVIEW.md`
+- CHANGED `src/components/ProgressPhotoCard.tsx` — privacy copy "Photos stay on this device unless you choose to sync them."
+- CHANGED `src/screens/SettingsScreen.tsx` — ProgressPhotoSyncCard
+- CHANGED `src/lib/persistConfig.ts` (progressPhotoSync key), `useHydration.ts`, `resetAppData.ts`
+- CHANGED `docs/SYNC_PLAN.md` — marked SYNC_PLAN COMPLETE (steps 1–9)
+- NOTE: authStore NOT changed — photos are manual-only (no auto-upload on sign-in)
+- DECISION D20: progress-photo sync is manual-only (not in the sign-in auto-sync chain) for privacy + bandwidth; photos come only from the explicit Add-photo flow (never temporary state)
+- BLOCKER (documented): the local-uri→bytes upload step (fetch+arrayBuffer) needs device verification in Expo; fallback = expo-file-system base64→Uint8Array. Everything else unit-tested.
+- 🎉 SYNC_PLAN COMPLETE — all 9 cloud-sync steps shipped (B-18…B-27), still fully local-first.
+
 ### B-02 files created
 - `supabase/migrations/001_initial_schema.sql` — 15 tables, FKs, 19 indexes, RLS (15 policies), updated_at trigger
 - `supabase/seed.sql` — 12 PF beginner machines, placeholder image keys, alt_exercise_id links, idempotent
@@ -713,13 +744,15 @@
 - Screens: `src/screens/{Onboarding,Today,WorkoutGuide,Progress,Library,Settings}Screen.tsx`
 
 ## Reprioritized sequence (per D12 — auth moved late)
-… → Body measurements sync ✅ → Weekly check-ins sync ✅ → Trainer recommendations sync ✅ → **next: B-27 (SYNC_PLAN step 9, FINAL sync)**.
+… → Weekly check-ins sync ✅ → Trainer recommendations sync ✅ → Progress photos sync ✅ → **SYNC_PLAN COMPLETE 🎉 → next: B-28 (TBD)**.
 
-## Next task (single, after approval) — B-27
+## Next task (single, after approval) — B-28
 > Per the loop rule: pick ONE item from FEATURE_BACKLOG.md, write a mini-spec, build, check, update this file, STOP.
-- **Proposed next (SYNC_PLAN step 9 — LAST sync step):** Sync **progress photos** → upload local uris to a PRIVATE Supabase Storage bucket (`progress-photos`), store the storage key in `progress_photos`, serve via signed URLs. Local-wins; needs the private bucket + storage RLS policies. Completes the SYNC_PLAN.
-- Alternatives: a local feature (streak/weekly-unlock), or a full end-to-end sync verification pass.
-- Awaiting user direction on B-27 scope.
+> The SYNC_PLAN is fully shipped. Candidates for the next phase:
+- **Candidate A:** End-to-end sync verification against a real (dev) Supabase project — provision, run migrations 001–009 + seed, `.env`, then verify each sync push/pull on-device (also validates the B-27 photo-upload runtime blocker).
+- **Candidate B:** Photo pull / gallery — download or signed-URL display of synced photos on a new device (resolves the deferred pull).
+- **Candidate C:** A remaining local feature — streak/weekly-unlock (trainer R7 in-app), or offline write-queue/retry (B-23 backlog).
+- Awaiting user direction on B-28 scope.
 
 ## Decisions (append)
 - D14 (2026-06-29): Git commits are authored as the user (`ijethi <Ijethi7@gmail.com>`), no Claude co-author trailer, per explicit user request. Earlier commits (B-01…B-16) were authored "FirstRep Dev" + Claude trailer — offer to rewrite author before the user pushes (nothing is pushed yet).

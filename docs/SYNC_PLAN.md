@@ -16,6 +16,12 @@
 - **Idempotent upserts** keyed by stable ids so re-sync never duplicates.
 - **No secrets in code.** Only the anon key via `EXPO_PUBLIC_*`; service role never ships to the client.
 
+## Status: COMPLETE ✅ (all 9 steps shipped, B-18 → B-27)
+Every step below is implemented local-first + local-wins. Pull is supported where the DB round-trip is
+lossless (profile, plan-progress, body weight, measurements, weekly check-ins, recommendations via
+payload); deferred where the schema can't faithfully reconstruct the local view (plan, workout sessions,
+cardio, photos). Photos are the only step NOT auto-triggered on sign-in (manual-only, for privacy/bandwidth).
+
 ## Sync order (earliest → latest)
 1. **Profile & onboarding** — `user_profiles` (+ thin `users`), `onboarding_answers`. *(profile upsert
    already scaffolded in B-17's auth store.)*

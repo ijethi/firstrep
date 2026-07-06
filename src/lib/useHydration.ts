@@ -17,6 +17,7 @@ import { useBodyWeightSyncStore } from '../state/bodyWeightSyncStore';
 import { useBodyMeasurementSyncStore } from '../state/bodyMeasurementSyncStore';
 import { useWeeklyCheckInSyncStore } from '../state/weeklyCheckInSyncStore';
 import { useTrainerRecSyncStore } from '../state/trainerRecommendationSyncStore';
+import { useProgressPhotoSyncStore } from '../state/progressPhotoSyncStore';
 
 /**
  * Hydration gate (B-10). AsyncStorage is async, so persisted stores rehydrate
@@ -58,5 +59,6 @@ export function useAppHydrated(): boolean {
   const o = useOneHydrated(useBodyMeasurementSyncStore as unknown as PersistedStore);
   const p = useOneHydrated(useWeeklyCheckInSyncStore as unknown as PersistedStore);
   const q = useOneHydrated(useTrainerRecSyncStore as unknown as PersistedStore);
-  return a && b && c && d && e && f && g && h && i && j && k && l && m && n && o && p && q;
+  const r = useOneHydrated(useProgressPhotoSyncStore as unknown as PersistedStore);
+  return a && b && c && d && e && f && g && h && i && j && k && l && m && n && o && p && q && r;
 }
