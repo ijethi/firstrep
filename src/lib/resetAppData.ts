@@ -10,6 +10,7 @@ import { useSafetyStore } from '../state/safetyStore';
 import { useProfileSyncStore } from '../state/profileSyncStore';
 import { usePlanSyncStore } from '../state/planSyncStore';
 import { usePlanProgressSyncStore } from '../state/planProgressSyncStore';
+import { useWorkoutSyncStore } from '../state/workoutSyncStore';
 
 /**
  * Clears all locally persisted FirstRep data (dev/testing + Settings reset).
@@ -30,4 +31,5 @@ export async function resetLocalAppData(): Promise<void> {
   useProfileSyncStore.setState({ status: 'idle', lastSyncedAtISO: null, lastError: null });
   usePlanSyncStore.setState({ status: 'idle', lastSyncedAtISO: null, lastError: null });
   usePlanProgressSyncStore.setState({ status: 'idle', lastSyncedAtISO: null, lastError: null });
+  useWorkoutSyncStore.setState({ status: 'idle', lastSyncedAtISO: null, lastError: null });
 }

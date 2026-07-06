@@ -7,11 +7,27 @@
 ---
 
 ## Current loop
-- **Loop #:** 20 — **B-20 Plan progress sync only**
-- **Goal of this loop:** Third cloud sync step — plan progress only (completedDayIds/last/selected), local-wins, local-first. New non-destructive `plan_progress` table (migration 002). Manual "Sync plan progress" + status. NO workout history synced.
-- **Success condition:** signed-in user syncs progress (clean upsert); schema gap solved via non-destructive migration; safe/no-crash when unconfigured/signed out; Settings shows status + last synced; local plan/history never mutated; abandoned sessions can't advance synced progress; typecheck + assertions pass.
-- **Ceiling:** Max 3 fix attempts. (Used: 0 — passed on first checker pass.)
-- **Status:** ✅ Complete — awaiting approval for B-21.
+- **Loop #:** 21 — **B-21 Workout sessions & exercise sets sync only**
+- **Goal of this loop:** Fourth cloud sync step — completed workout_sessions + strength exercise_sets only (NO cardio, NO abandoned/active). Local-wins, local-first. Non-destructive migration 003 for client ids. Manual "Sync workouts" + status.
+- **Success condition:** signed-in user pushes completed sessions+sets; abandoned/active/discarded excluded; cardio not synced; safe/no-crash when unconfigured/signed out; Settings shows status; local history never mutated/erased; only the 2 tables touched; typecheck + assertions pass.
+- **Ceiling:** Max 3 fix attempts. (Used: 1 — `felt_overall` not on local session type → mapped null.)
+- **Status:** ✅ Complete — awaiting approval for B-22.
+
+### Loop 21 verification (maker-checker — typecheck + 22 assertions + migration sanity)
+| Gate | Result |
+|------|--------|
+| `npx tsc --noEmit` | ✅ PASSED (after 1 fix) |
+| Non-destructive migration | ✅ `003_workout_sync_ids.sql` — 2 add-column (local_session_id/local_set_id) + indexes; 0 destructive |
+| **Completed only** (abandoned/active/discarded excluded) | ✅ asserted |
+| **Cardio NOT synced** (strength sets only) | ✅ toSetRows ignores s.cardio (asserted no cardio in rows) |
+| Local-wins direction | ✅ local completed → push (even if remote exists) |
+| Upsert session by (user_id, local_session_id) + reinsert sets | ✅ stable deterministic local ids |
+| slug→uuid exercise_id; missing → stop | ✅ |
+| **Local history never mutated / not erased on failure** | ✅ read-only; error → status only |
+| Safe when unconfigured/signed out | ✅ status 'disabled' |
+| Only workout_sessions + exercise_sets touched | ✅ no cardio/weight/measurements/photos/recs/checkins |
+| Pull deferred (documented) | ✅ WORKOUT_PULL_SUPPORTED=false |
+| No secrets committed | ✅ |
 
 ### Loop 20 verification (maker-checker — typecheck + 17 assertions + migration sanity)
 | Gate | Result |
@@ -539,6 +555,17 @@
 - CHANGED `DATA_MODEL.md` — noted the new `plan_progress` table
 - DECISION D15: added `plan_progress` table (16th) — needed a clean home for progress; non-destructive (new table only), not hacked into existing tables
 
+### B-21 files created / changed
+- NEW `supabase/migrations/003_workout_sync_ids.sql` — NON-DESTRUCTIVE: local_session_id (+unique user_id,local) + local_set_id (+index)
+- NEW `src/lib/workoutSyncCore.ts` — PURE: isSyncableSession (completed-only), direction (local-wins), toSessionRow, toSetRows (strength-only, cardio excluded, slug→uuid), local id derivation, dbEffort; WORKOUT_PULL_SUPPORTED=false
+- NEW `src/lib/workoutSync.ts` — syncWorkouts(user): upsert session by local id + reinsert sets; never mutates local history; pull deferred
+- NEW `src/state/workoutSyncStore.ts`, `src/components/WorkoutSyncCard.tsx`, `docs/WORKOUT_SYNC_REVIEW.md`
+- CHANGED `src/state/authStore.ts` — sign-in/up also trigger `syncWorkouts`
+- CHANGED `src/screens/SettingsScreen.tsx` — WorkoutSyncCard
+- CHANGED `src/lib/persistConfig.ts` (workoutSync key), `useHydration.ts`, `resetAppData.ts`
+- DECISION D16: cardio in a completed session is NOT synced (session row + strength sets only) — cardio_logs is B-22
+- NOTE: PULL deferred — workout_sessions/exercise_sets don't store the full session view (dayName/targets/cardio/etc)
+
 ### B-02 files created
 - `supabase/migrations/001_initial_schema.sql` — 15 tables, FKs, 19 indexes, RLS (15 policies), updated_at trigger
 - `supabase/seed.sql` — 12 PF beginner machines, placeholder image keys, alt_exercise_id links, idempotent
@@ -554,13 +581,13 @@
 - Screens: `src/screens/{Onboarding,Today,WorkoutGuide,Progress,Library,Settings}Screen.tsx`
 
 ## Reprioritized sequence (per D12 — auth moved late)
-… → Supabase auth foundation ✅ → Profile & onboarding sync ✅ → Generated plan sync ✅ → Plan progress sync ✅ → **next: B-21 (SYNC_PLAN step 4)**.
+… → Profile & onboarding sync ✅ → Generated plan sync ✅ → Plan progress sync ✅ → Workout sessions & sets sync ✅ → **next: B-22 (SYNC_PLAN step 5)**.
 
-## Next task (single, after approval) — B-21
+## Next task (single, after approval) — B-22
 > Per the loop rule: pick ONE item from FEATURE_BACKLOG.md, write a mini-spec, build, check, update this file, STOP.
-- **Proposed next (SYNC_PLAN step 4):** Sync **workout sessions & sets** (`workout_sessions` + `exercise_sets`), local-wins, still local-first. Largest sync surface — likely a per-session upsert keyed by a stable local session id (may need a small migration for a client id column).
-- Alternatives: streak/weekly-unlock (local), or in-session coach tips (local).
-- Awaiting user direction on B-21 scope.
+- **Proposed next (SYNC_PLAN step 5):** Sync **cardio logs** (`cardio_logs`) — the cardio blocks of completed sessions, local-wins, still local-first. Likely reuses the completed-session filter + a client id for de-dup (small migration if needed).
+- Alternatives: body weight & measurements sync (step 6), or a local feature (streak/weekly-unlock).
+- Awaiting user direction on B-22 scope.
 
 ## Decisions (append)
 - D14 (2026-06-29): Git commits are authored as the user (`ijethi <Ijethi7@gmail.com>`), no Claude co-author trailer, per explicit user request. Earlier commits (B-01…B-16) were authored "FirstRep Dev" + Claude trailer — offer to rewrite author before the user pushes (nothing is pushed yet).
