@@ -13,6 +13,7 @@ import PlanProgressSyncCard from '../components/PlanProgressSyncCard';
 import WorkoutSyncCard from '../components/WorkoutSyncCard';
 import CardioSyncCard from '../components/CardioSyncCard';
 import BodyWeightSyncCard from '../components/BodyWeightSyncCard';
+import BodyMeasurementSyncCard from '../components/BodyMeasurementSyncCard';
 import { ChoiceGroup, MultiChoiceGroup } from '../components/onboarding';
 import type { ChoiceOption } from '../components/onboarding';
 import { colors, spacing, typography } from '../theme';
@@ -179,6 +180,7 @@ export default function SettingsScreen() {
       <WorkoutSyncCard />
       <CardioSyncCard />
       <BodyWeightSyncCard />
+      <BodyMeasurementSyncCard />
 
       <SettingsSection title="Safety tips">
         {SAFETY_TIPS.map((tip, i) => (

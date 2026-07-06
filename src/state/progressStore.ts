@@ -26,6 +26,8 @@ interface ProgressState {
   /** Replace local body weights wholesale (used by the body-weight PULL sync, B-23). */
   importBodyWeights: (entries: BodyWeightEntry[]) => void;
   addMeasurement: (entry: BodyMeasurementEntry) => void;
+  /** Replace local measurements wholesale (used by the measurement PULL sync, B-24). */
+  importMeasurements: (entries: BodyMeasurementEntry[]) => void;
   addPhoto: (entry: ProgressPhotoEntry) => void;
   clear: () => void;
 }
@@ -44,6 +46,7 @@ export const useProgressStore = create<ProgressState>()(
         })),
       importBodyWeights: (entries) => set({ bodyWeights: [...entries] }),
       addMeasurement: (entry) => set((s) => ({ measurements: [...s.measurements, entry] })),
+      importMeasurements: (entries) => set({ measurements: [...entries] }),
       addPhoto: (entry) => set((s) => ({ photos: [...s.photos, entry] })),
       clear: () => set({ history: [], bodyWeights: [], measurements: [], photos: [] }),
     }),

@@ -19,6 +19,7 @@ export const STORAGE_KEYS = {
   workoutSync: 'firstrep:workout-sync',
   cardioSync: 'firstrep:cardio-sync',
   bodyWeightSync: 'firstrep:body-weight-sync',
+  bodyMeasurementSync: 'firstrep:body-measurement-sync',
 } as const;
 
 /** Bump when a persisted store's shape changes; add a branch in migratePersisted. */

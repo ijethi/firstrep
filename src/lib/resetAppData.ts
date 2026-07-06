@@ -13,6 +13,7 @@ import { usePlanProgressSyncStore } from '../state/planProgressSyncStore';
 import { useWorkoutSyncStore } from '../state/workoutSyncStore';
 import { useCardioSyncStore } from '../state/cardioSyncStore';
 import { useBodyWeightSyncStore } from '../state/bodyWeightSyncStore';
+import { useBodyMeasurementSyncStore } from '../state/bodyMeasurementSyncStore';
 
 /**
  * Clears all locally persisted FirstRep data (dev/testing + Settings reset).
@@ -36,4 +37,5 @@ export async function resetLocalAppData(): Promise<void> {
   useWorkoutSyncStore.setState({ status: 'idle', lastSyncedAtISO: null, lastError: null });
   useCardioSyncStore.setState({ status: 'idle', lastSyncedAtISO: null, lastError: null });
   useBodyWeightSyncStore.setState({ status: 'idle', lastSyncedAtISO: null, lastError: null });
+  useBodyMeasurementSyncStore.setState({ status: 'idle', lastSyncedAtISO: null, lastError: null });
 }
