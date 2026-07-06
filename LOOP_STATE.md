@@ -7,11 +7,26 @@
 ---
 
 ## Current loop
-- **Loop #:** 24 — **B-24 Body measurements sync only**
-- **Goal of this loop:** Seventh cloud sync step — body_measurement_logs only (canonical cm, note preserved), local-wins, local-first. Non-destructive migration 006 (note + client id). Safe PULL. Manual "Sync measurements" + status.
-- **Success condition:** signed-in user syncs measurements (upsert); safe/no-crash when unconfigured/signed out; Settings shows status; local measurement history never mutated/erased; cm canonical (no conversion); only body_measurement_logs touched; typecheck + assertions pass.
+- **Loop #:** 25 — **B-25 Weekly check-ins sync only**
+- **Goal of this loop:** Eighth cloud sync step — weekly_checkins only, local-wins, local-first. Full fidelity via `payload` jsonb (categorical/barriers/goal/message preserved). Non-destructive migration 007. Safe PULL. Manual "Sync weekly check-ins" + status.
+- **Success condition:** signed-in user syncs check-ins (upsert); safe/no-crash when unconfigured/signed out; Settings shows status; local check-ins never mutated/erased; no value reinterpretation; only weekly_checkins touched; typecheck + assertions pass.
 - **Ceiling:** Max 3 fix attempts. (Used: 0 — passed on first checker pass.)
-- **Status:** ✅ Complete — awaiting approval for B-25.
+- **Status:** ✅ Complete — awaiting approval for B-26.
+
+### Loop 25 verification (maker-checker — typecheck + 22 assertions + migration sanity)
+| Gate | Result |
+|------|--------|
+| `npx tsc --noEmit` | ✅ PASSED |
+| Non-destructive migration | ✅ `007_weekly_checkin_sync_ids.sql` — 2 add-column (payload jsonb, local id) + unique; 0 destructive |
+| Local-wins direction | ✅ local → push (even if remote exists) |
+| Derived ints (query) + **payload preserves original values** | ✅ categorical/barriers/goal kept; no reinterpretation |
+| Generated message recreated via rule helper (no stored value) | ✅ payload.message matches entry |
+| Clean upsert by (user_id, local_weekly_checkin_id) | ✅ deterministic id `checkin:${createdAtISO}:${index}` |
+| **Safe PULL via payload** (only when local empty) | ✅ invalid/empty payload dropped; CHECKIN_PULL_SUPPORTED=true |
+| **Local check-ins never mutated / not erased** | ✅ push read-only; pull only when empty; error → status only |
+| Safe when unconfigured/signed out | ✅ status 'disabled' |
+| Only weekly_checkins touched | ✅ no recs/photos/workouts/etc |
+| No secrets committed | ✅ |
 
 ### Loop 24 verification (maker-checker — typecheck + 21 assertions + migration sanity)
 | Gate | Result |
@@ -644,6 +659,17 @@
 - CHANGED `src/lib/persistConfig.ts` (bodyMeasurementSync key), `useHydration.ts`, `resetAppData.ts`
 - DECISION D17: added `note` column to `body_measurement_logs` (non-destructive) so the local measurement note can be preserved (001 had no note column)
 
+### B-25 files created / changed
+- NEW `supabase/migrations/007_weekly_checkin_sync_ids.sql` — NON-DESTRUCTIVE: add `payload jsonb` + `local_weekly_checkin_id` (+unique user_id,local)
+- NEW `src/lib/weeklyCheckInSyncCore.ts` — PURE direction (local-wins), localCheckInId, toCheckInRow(s) (derived ints + full payload incl. generated message), checkInFromRow(s) SAFE pull via payload; CHECKIN_PULL_SUPPORTED=true
+- NEW `src/lib/weeklyCheckInSync.ts` — syncWeeklyCheckIns(user): upsert push / safe pull (only when local empty); never mutates local on failure
+- NEW `src/state/weeklyCheckInSyncStore.ts`, `src/components/WeeklyCheckInSyncCard.tsx`, `docs/WEEKLY_CHECKIN_SYNC_REVIEW.md`
+- CHANGED `src/state/weeklyCheckInStore.ts` — `importCheckIns` (pull path)
+- CHANGED `src/state/authStore.ts` — sign-in/up also trigger `syncWeeklyCheckIns`
+- CHANGED `src/screens/SettingsScreen.tsx` — WeeklyCheckInSyncCard
+- CHANGED `src/lib/persistConfig.ts` (weeklyCheckInSync key), `useHydration.ts`, `resetAppData.ts`
+- DECISION D18: added `payload jsonb` to `weekly_checkins` (non-destructive) — the DB int scales can't hold confidence/barriers/goal/message; payload preserves full fidelity + enables safe pull (int cols kept as a derived queryable view)
+
 ### B-02 files created
 - `supabase/migrations/001_initial_schema.sql` — 15 tables, FKs, 19 indexes, RLS (15 policies), updated_at trigger
 - `supabase/seed.sql` — 12 PF beginner machines, placeholder image keys, alt_exercise_id links, idempotent
@@ -659,14 +685,14 @@
 - Screens: `src/screens/{Onboarding,Today,WorkoutGuide,Progress,Library,Settings}Screen.tsx`
 
 ## Reprioritized sequence (per D12 — auth moved late)
-… → Workout sessions & sets sync ✅ → Cardio logs sync ✅ → Body weight logs sync ✅ → Body measurements sync ✅ → **next: B-25 (SYNC_PLAN step 7)**.
+… → Cardio logs sync ✅ → Body weight logs sync ✅ → Body measurements sync ✅ → Weekly check-ins sync ✅ → **next: B-26 (SYNC_PLAN step 8)**.
 
-## Next task (single, after approval) — B-25
+## Next task (single, after approval) — B-26
 > Per the loop rule: pick ONE item from FEATURE_BACKLOG.md, write a mini-spec, build, check, update this file, STOP.
-- **Proposed next (SYNC_PLAN step 7):** Sync **weekly check-ins** (`weekly_checkins`) — energy/soreness/motivation ints + workouts/cardio, local-wins, safe pull. Small non-destructive migration for a client id (+ maybe columns for confidence/barriers/goal, or a jsonb).
-- Then: trainer recommendations (step 8), progress photos → private Storage (step 9, last).
+- **Proposed next (SYNC_PLAN step 8):** Sync **trainer recommendations** (`trainer_recommendations`) — rule/type/message/action, local-wins, safe pull. Small non-destructive migration for a client id (+ maybe a jsonb for title/nextAction/priority).
+- Then the FINAL sync step: progress photos → private Supabase Storage (step 9).
 - Alternatives: a local feature (streak/weekly-unlock).
-- Awaiting user direction on B-25 scope.
+- Awaiting user direction on B-26 scope.
 
 ## Decisions (append)
 - D14 (2026-06-29): Git commits are authored as the user (`ijethi <Ijethi7@gmail.com>`), no Claude co-author trailer, per explicit user request. Earlier commits (B-01…B-16) were authored "FirstRep Dev" + Claude trailer — offer to rewrite author before the user pushes (nothing is pushed yet).

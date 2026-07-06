@@ -11,6 +11,7 @@ import { syncWorkouts } from '../lib/workoutSync';
 import { syncCardio } from '../lib/cardioSync';
 import { syncBodyWeight } from '../lib/bodyWeightSync';
 import { syncBodyMeasurements } from '../lib/bodyMeasurementSync';
+import { syncWeeklyCheckIns } from '../lib/weeklyCheckInSync';
 
 /**
  * Auth store (B-17) — Supabase auth foundation ONLY. Not persisted here; the
@@ -64,7 +65,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!supabase) return { error: NOT_CONFIGURED };
     set({ loading: true });
     const { data, error } = await supabase.auth.signUp({ email, password });
-    if (!error && data.user) { void syncProfile(data.user); void syncPlan(data.user); void syncPlanProgress(data.user); void syncWorkouts(data.user); void syncCardio(data.user); void syncBodyWeight(data.user); void syncBodyMeasurements(data.user); } // sync: profile(18)+plan(19)+progress(20)+workouts(21)+cardio(22)+weight(23)+measure(24)
+    if (!error && data.user) { void syncProfile(data.user); void syncPlan(data.user); void syncPlanProgress(data.user); void syncWorkouts(data.user); void syncCardio(data.user); void syncBodyWeight(data.user); void syncBodyMeasurements(data.user); void syncWeeklyCheckIns(data.user); } // sync: 18-25 (profile/plan/progress/workouts/cardio/weight/measure/checkins)
     set({ loading: false });
     return { error: error?.message ?? null };
   },
@@ -73,7 +74,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!supabase) return { error: NOT_CONFIGURED };
     set({ loading: true });
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (!error && data.user) { void syncProfile(data.user); void syncPlan(data.user); void syncPlanProgress(data.user); void syncWorkouts(data.user); void syncCardio(data.user); void syncBodyWeight(data.user); void syncBodyMeasurements(data.user); } // sync: profile(18)+plan(19)+progress(20)+workouts(21)+cardio(22)+weight(23)+measure(24)
+    if (!error && data.user) { void syncProfile(data.user); void syncPlan(data.user); void syncPlanProgress(data.user); void syncWorkouts(data.user); void syncCardio(data.user); void syncBodyWeight(data.user); void syncBodyMeasurements(data.user); void syncWeeklyCheckIns(data.user); } // sync: 18-25 (profile/plan/progress/workouts/cardio/weight/measure/checkins)
     set({ loading: false });
     return { error: error?.message ?? null };
   },

@@ -13,6 +13,8 @@ import { migratePersisted, PERSIST_VERSION, STORAGE_KEYS } from '../lib/persistC
 interface WeeklyCheckInState {
   checkIns: WeeklyCheckInEntry[];
   addCheckIn: (entry: WeeklyCheckInEntry) => void;
+  /** Replace local check-ins wholesale (used by the weekly-check-in PULL sync, B-25). */
+  importCheckIns: (entries: WeeklyCheckInEntry[]) => void;
   clear: () => void;
 }
 
@@ -21,6 +23,7 @@ export const useWeeklyCheckInStore = create<WeeklyCheckInState>()(
     (set) => ({
       checkIns: [],
       addCheckIn: (entry) => set((s) => ({ checkIns: [...s.checkIns, entry] })),
+      importCheckIns: (entries) => set({ checkIns: [...entries] }),
       clear: () => set({ checkIns: [] }),
     }),
     {
