@@ -35,9 +35,15 @@ bypasses RLS. To avoid using or persisting exposed credentials, this loop used a
 | No public photo URLs (no `getPublicUrl`; storage_path is a key) | **Passed** | static |
 
 ## 1b. Attempt to apply migrations via management API — BLOCKED
-Tried to apply migrations 001–009 + seed to the project WITHOUT the leaked keys, using the Supabase
-management (MCP) connection. **Blocked: HTTP 503** on `list_projects` / `list_migrations` (3 attempts).
-The management connection is unavailable in this environment, so backend setup could not run here.
+Tried to apply migrations 001–009 + seed to the project WITHOUT the leaked keys, via the Supabase
+management (MCP) connection. First attempts returned **HTTP 503**; after the connection recovered it
+returned **"You do not have permission to perform this action"** for project `lblsykkoakyjcvigfwao`.
+→ The management token in this environment is **not authorized for this project**. With no Supabase CLI
+and no DB password here, migrations **cannot be applied from this environment**. This is a hard blocker;
+the owner must apply them (SQL Editor or CLI).
+
+**Convenience:** `supabase/APPLY_ALL.sql` concatenates 001–009 + seed in order — paste into the SQL Editor
+and Run.
 
 ## 2. Live steps — NOT RUN (dummy env + management API 503; needs rotated real keys / device)
 | Step | Status |
